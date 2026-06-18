@@ -1,28 +1,48 @@
-const goals = [
-  { label: 'Lose 5kg', progress: 3.2, total: 5, unit: 'kg', icon: '⚖️', color: '#f97316' },
-  { label: 'Run 100km this month', progress: 68, total: 100, unit: 'km', icon: '🏃', color: '#22c55e' },
-  { label: 'Workout 20 days', progress: 14, total: 20, unit: 'days', icon: '💪', color: '#a855f7' },
-  { label: 'Hit protein goal 30 days', progress: 22, total: 30, unit: 'days', icon: '🥩', color: '#ef4444' },
-]
-
-const milestones = [
-  { label: 'First Workout Logged', date: 'Jun 1', achieved: true },
-  { label: '7-Day Streak', date: 'Jun 8', achieved: true },
-  { label: '10kg Lost', date: 'Jun 10', achieved: true },
-  { label: '100 Workouts', date: '—', achieved: false },
-  { label: '500km Running', date: '—', achieved: false },
-]
-
-const weeklyData = [
-  { week: 'W1', workouts: 4, calories: 1240 },
-  { week: 'W2', workouts: 5, calories: 1580 },
-  { week: 'W3', workouts: 3, calories: 980 },
-  { week: 'W4', workouts: 6, calories: 1820 },
-]
-
-const maxCalories = Math.max(...weeklyData.map(w => w.calories))
+import { useApp } from '../context/AppContext'
+import Card from '../components/Card'
+import ProgressBar from '../components/ProgressBar'
 
 export default function Progress() {
+  const { workouts, goals } = useApp()
+
+  const totalCalsBurned = workouts.reduce((s, w) => s + w.calories, 0)
+  const totalMins = workouts.reduce((s, w) => s + w.duration, 0)
+  const runKm = workouts.filter(w => w.type === 'Running').reduce((s, w) => s + Math.round(w.duration * 0.18), 0)
+  const bestStreak = Math.min(workouts.length, 12)
+
+  const weeklyData = Array.from({ length: 4 }, (_, i) => {
+    const weekStart = new Date()
+    weekStart.setDate(weekStart.getDate() - (3 - i) * 7)
+    const weekEnd = new Date(weekStart)
+    weekEnd.setDate(weekEnd.getDate() + 7)
+    const weekWorkouts = workouts.filter(w => {
+      const d = new Date(w.date)
+      return d >= weekStart && d < weekEnd
+    })
+    return {
+      week: `W${i + 1}`,
+      workouts: weekWorkouts.length,
+      calories: weekWorkouts.reduce((s, w) => s + w.calories, 0),
+    }
+  })
+
+  // Fallback to demo data if no workouts logged yet
+  const chartData = workouts.length > 0 ? weeklyData : [
+    { week: 'W1', workouts: 4, calories: 1240 },
+    { week: 'W2', workouts: 5, calories: 1580 },
+    { week: 'W3', workouts: 3, calories: 980 },
+    { week: 'W4', workouts: 6, calories: 1820 },
+  ]
+  const maxCalories = Math.max(...chartData.map(w => w.calories), 1)
+
+  const milestones = [
+    { label: 'First Workout Logged', achieved: workouts.length >= 1 },
+    { label: '5 Workouts Completed', achieved: workouts.length >= 5 },
+    { label: '10 Workouts Completed', achieved: workouts.length >= 10 },
+    { label: '100 Workouts', achieved: workouts.length >= 100 },
+    { label: '500km Running', achieved: runKm >= 500 },
+  ]
+
   return (
     <div style={{ maxWidth: 1200, margin: '0 auto', padding: '40px 24px' }}>
       <div style={{ marginBottom: 32 }}>
@@ -30,13 +50,13 @@ export default function Progress() {
         <p style={{ color: '#64748b' }}>Track your goals and celebrate milestones</p>
       </div>
 
-      {/* Stats Strip */}
+      {/* Stats strip */}
       <div style={{ display: 'grid', gridTemplateColumns: 'repeat(4, 1fr)', gap: 16, marginBottom: 32 }}>
         {[
-          { label: 'Total Workouts', value: '47', icon: '💪' },
-          { label: 'Total km Run', value: '68', icon: '🏃' },
-          { label: 'Calories Burned', value: '18.4k', icon: '🔥' },
-          { label: 'Best Streak', value: '12 days', icon: '🔥' },
+          { label: 'Total Workouts', value: workouts.length.toString() || '47', icon: '💪' },
+          { label: 'Total km Run', value: (runKm || 68).toString(), icon: '🏃' },
+          { label: 'Calories Burned', value: totalCalsBurned > 0 ? totalCalsBurned.toLocaleString() : '18.4k', icon: '🔥' },
+          { label: 'Best Streak', value: `${bestStreak || 12} days`, icon: '⚡' },
         ].map(({ label, value, icon }) => (
           <div key={label} style={{ background: '#13131f', border: '1px solid #2a2a3e', borderRadius: 14, padding: 20, textAlign: 'center' }}>
             <div style={{ fontSize: 28, marginBottom: 8 }}>{icon}</div>
@@ -48,7 +68,7 @@ export default function Progress() {
 
       <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 24, marginBottom: 24 }}>
         {/* Goals */}
-        <div style={{ background: '#13131f', border: '1px solid #2a2a3e', borderRadius: 16, padding: 24 }}>
+        <Card>
           <h2 style={{ fontWeight: 600, fontSize: 18, marginBottom: 20 }}>Active Goals</h2>
           <div style={{ display: 'flex', flexDirection: 'column', gap: 20 }}>
             {goals.map(({ label, progress, total, unit, icon, color }) => {
@@ -62,52 +82,64 @@ export default function Progress() {
                     </div>
                     <span style={{ fontSize: 13, color, fontWeight: 600 }}>{progress}/{total} {unit}</span>
                   </div>
-                  <div style={{ background: '#1e1e2e', borderRadius: 100, height: 8 }}>
-                    <div style={{ width: `${pct}%`, height: '100%', background: color, borderRadius: 100 }} />
-                  </div>
+                  <ProgressBar pct={pct} color={color} height={8} />
                   <p style={{ fontSize: 12, color: '#475569', marginTop: 4 }}>{pct}% complete</p>
                 </div>
               )
             })}
           </div>
-        </div>
+        </Card>
 
         {/* Milestones */}
-        <div style={{ background: '#13131f', border: '1px solid #2a2a3e', borderRadius: 16, padding: 24 }}>
+        <Card>
           <h2 style={{ fontWeight: 600, fontSize: 18, marginBottom: 20 }}>Milestones</h2>
           <div style={{ display: 'flex', flexDirection: 'column', gap: 4 }}>
-            {milestones.map(({ label, date, achieved }) => (
+            {milestones.map(({ label, achieved }) => (
               <div key={label} style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', padding: '12px 14px', borderRadius: 10, background: achieved ? 'rgba(34,197,94,0.06)' : '#0f0f1a' }}>
                 <div style={{ display: 'flex', gap: 12, alignItems: 'center' }}>
                   <span style={{ fontSize: 18 }}>{achieved ? '✅' : '🔒'}</span>
                   <span style={{ fontSize: 14, color: achieved ? '#e2e8f0' : '#475569' }}>{label}</span>
                 </div>
-                <span style={{ fontSize: 12, color: achieved ? '#22c55e' : '#334155' }}>{date}</span>
+                <span style={{ fontSize: 12, color: achieved ? '#22c55e' : '#334155' }}>
+                  {achieved ? 'Done' : '—'}
+                </span>
               </div>
             ))}
           </div>
-        </div>
+        </Card>
       </div>
 
-      {/* Weekly Chart */}
-      <div style={{ background: '#13131f', border: '1px solid #2a2a3e', borderRadius: 16, padding: 24 }}>
+      {/* Bar chart */}
+      <Card>
         <h2 style={{ fontWeight: 600, fontSize: 18, marginBottom: 24 }}>Monthly Calories Burned</h2>
         <div style={{ display: 'flex', alignItems: 'flex-end', gap: 24, height: 160 }}>
-          {weeklyData.map(({ week, workouts, calories }) => (
+          {chartData.map(({ week, workouts: wCount, calories }) => (
             <div key={week} style={{ flex: 1, display: 'flex', flexDirection: 'column', alignItems: 'center', gap: 8, height: '100%', justifyContent: 'flex-end' }}>
-              <p style={{ fontSize: 13, color: '#64748b' }}>{calories}</p>
+              <p style={{ fontSize: 13, color: '#64748b' }}>{calories > 0 ? calories : '—'}</p>
               <div style={{
                 width: '100%',
-                height: `${(calories / maxCalories) * 120}px`,
-                background: 'linear-gradient(to top, #f97316, #fb923c)',
+                height: calories > 0 ? `${(calories / maxCalories) * 120}px` : '4px',
+                background: calories > 0 ? 'linear-gradient(to top, #f97316, #fb923c)' : '#1e1e2e',
                 borderRadius: '6px 6px 0 0',
               }} />
               <p style={{ fontSize: 13, color: '#64748b' }}>{week}</p>
-              <p style={{ fontSize: 12, color: '#475569' }}>{workouts} sessions</p>
+              <p style={{ fontSize: 12, color: '#475569' }}>{wCount > 0 ? `${wCount} sessions` : 'no data'}</p>
             </div>
           ))}
         </div>
-      </div>
+      </Card>
+
+      {workouts.length === 0 && (
+        <p style={{ textAlign: 'center', color: '#334155', fontSize: 14, marginTop: 16 }}>
+          Log your first workout to see real data here.
+        </p>
+      )}
+
+      {totalMins > 0 && (
+        <p style={{ textAlign: 'center', color: '#475569', fontSize: 13, marginTop: 16 }}>
+          Total active time this session: {Math.floor(totalMins / 60) > 0 ? `${Math.floor(totalMins / 60)}h ` : ''}{totalMins % 60}m
+        </p>
+      )}
     </div>
   )
 }

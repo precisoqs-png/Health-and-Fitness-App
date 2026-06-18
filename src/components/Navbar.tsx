@@ -6,6 +6,7 @@ const navItems = [
   { to: '/workouts', label: 'Workouts', icon: '💪' },
   { to: '/nutrition', label: 'Nutrition', icon: '🥗' },
   { to: '/progress', label: 'Progress', icon: '📈' },
+  { to: '/settings', label: 'Settings', icon: '⚙️' },
 ]
 
 export default function Navbar() {

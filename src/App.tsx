@@ -5,6 +5,7 @@ import Dashboard from './pages/Dashboard'
 import Workouts from './pages/Workouts'
 import Nutrition from './pages/Nutrition'
 import Progress from './pages/Progress'
+import Settings from './pages/Settings'
 
 export default function App() {
   return (
@@ -16,6 +17,7 @@ export default function App() {
         <Route path="/workouts" element={<Workouts />} />
         <Route path="/nutrition" element={<Nutrition />} />
         <Route path="/progress" element={<Progress />} />
+        <Route path="/settings" element={<Settings />} />
       </Routes>
     </div>
   )
