@@ -1,5 +1,5 @@
 import { useState } from 'react'
-import { useApp } from '../context/AppContext'
+import { useApp, todayISO } from '../context/AppContext'
 import Card from '../components/Card'
 import ProgressBar from '../components/ProgressBar'
 
@@ -11,7 +11,7 @@ export default function Nutrition() {
   const [form, setForm] = useState(emptyForm)
   const [error, setError] = useState('')
 
-  const todayMeals = meals
+  const todayMeals = meals.filter(m => m.date?.slice(0, 10) === todayISO())
 
   // For a fresh session, show placeholder meals if none logged yet
   const displayMeals = todayMeals.length > 0 ? todayMeals : [

@@ -1,12 +1,12 @@
-import { createContext, useContext, useState } from 'react'
+import { createContext, useContext, useState, useEffect } from 'react'
 import type { ReactNode } from 'react'
 
 export interface Workout {
   id: string
   type: string
   icon: string
-  date: string // ISO date string
-  duration: number // minutes
+  date: string
+  duration: number
   calories: number
 }
 
@@ -19,6 +19,7 @@ export interface Meal {
   protein: number
   carbs: number
   fat: number
+  date: string
 }
 
 export interface Goal {
@@ -46,9 +47,10 @@ interface AppState {
   meals: Meal[]
   goals: Goal[]
   addWorkout: (w: Omit<Workout, 'id' | 'date'>) => void
-  addMeal: (m: Omit<Meal, 'id'>) => void
+  addMeal: (m: Omit<Meal, 'id' | 'date'>) => void
   updateGoalProgress: (label: string, progress: number) => void
   updateProfile: (p: Partial<Profile>) => void
+  clearToday: () => void
 }
 
 const defaultProfile: Profile = {
@@ -68,13 +70,40 @@ const defaultGoals: Goal[] = [
   { label: 'Hit protein goal 30 days', progress: 22, total: 30, unit: 'days', icon: '🥩', color: '#ef4444' },
 ]
 
+function load<T>(key: string, fallback: T): T {
+  try {
+    const raw = localStorage.getItem(key)
+    return raw ? (JSON.parse(raw) as T) : fallback
+  } catch {
+    return fallback
+  }
+}
+
+function save<T>(key: string, value: T) {
+  try {
+    localStorage.setItem(key, JSON.stringify(value))
+  } catch {
+    // storage full or unavailable — fail silently
+  }
+}
+
+function usePersistedState<T>(key: string, fallback: T) {
+  const [state, setState] = useState<T>(() => load(key, fallback))
+
+  useEffect(() => {
+    save(key, state)
+  }, [key, state])
+
+  return [state, setState] as const
+}
+
 const AppContext = createContext<AppState | null>(null)
 
 export function AppProvider({ children }: { children: ReactNode }) {
-  const [profile, setProfile] = useState<Profile>(defaultProfile)
-  const [workouts, setWorkouts] = useState<Workout[]>([])
-  const [meals, setMeals] = useState<Meal[]>([])
-  const [goals, setGoals] = useState<Goal[]>(defaultGoals)
+  const [profile, setProfile] = usePersistedState<Profile>('vf_profile', defaultProfile)
+  const [workouts, setWorkouts] = usePersistedState<Workout[]>('vf_workouts', [])
+  const [meals, setMeals] = usePersistedState<Meal[]>('vf_meals', [])
+  const [goals, setGoals] = usePersistedState<Goal[]>('vf_goals', defaultGoals)
 
   function addWorkout(w: Omit<Workout, 'id' | 'date'>) {
     setWorkouts(prev => [
@@ -83,8 +112,8 @@ export function AppProvider({ children }: { children: ReactNode }) {
     ])
   }
 
-  function addMeal(m: Omit<Meal, 'id'>) {
-    setMeals(prev => [...prev, { ...m, id: crypto.randomUUID() }])
+  function addMeal(m: Omit<Meal, 'id' | 'date'>) {
+    setMeals(prev => [...prev, { ...m, id: crypto.randomUUID(), date: new Date().toISOString() }])
   }
 
   function updateGoalProgress(label: string, progress: number) {
@@ -95,8 +124,14 @@ export function AppProvider({ children }: { children: ReactNode }) {
     setProfile(prev => ({ ...prev, ...p }))
   }
 
+  function clearToday() {
+    const today = todayISO()
+    setWorkouts(prev => prev.filter(w => w.date.slice(0, 10) !== today))
+    setMeals(prev => prev.filter(m => m.date.slice(0, 10) !== today))
+  }
+
   return (
-    <AppContext.Provider value={{ profile, workouts, meals, goals, addWorkout, addMeal, updateGoalProgress, updateProfile }}>
+    <AppContext.Provider value={{ profile, workouts, meals, goals, addWorkout, addMeal, updateGoalProgress, updateProfile, clearToday }}>
       {children}
     </AppContext.Provider>
   )
