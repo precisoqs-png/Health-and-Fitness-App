@@ -1,6 +1,8 @@
 import { Routes, Route } from 'react-router-dom'
 import { useAuth } from './context/AuthContext'
+import { useMobile } from './hooks/useMobile'
 import Navbar from './components/Navbar'
+import BottomNav from './components/BottomNav'
 import Auth from './pages/Auth'
 import Home from './pages/Home'
 import Dashboard from './pages/Dashboard'
@@ -11,6 +13,7 @@ import Settings from './pages/Settings'
 
 export default function App() {
   const { user, loading } = useAuth()
+  const isMobile = useMobile()
 
   if (loading) {
     return (
@@ -25,14 +28,17 @@ export default function App() {
   return (
     <div style={{ minHeight: '100vh', background: '#0f0f1a', color: '#e2e8f0' }}>
       <Navbar />
-      <Routes>
-        <Route path="/" element={<Home />} />
-        <Route path="/dashboard" element={<Dashboard />} />
-        <Route path="/workouts" element={<Workouts />} />
-        <Route path="/nutrition" element={<Nutrition />} />
-        <Route path="/progress" element={<Progress />} />
-        <Route path="/settings" element={<Settings />} />
-      </Routes>
+      <div style={{ paddingBottom: isMobile ? 72 : 0 }}>
+        <Routes>
+          <Route path="/" element={<Home />} />
+          <Route path="/dashboard" element={<Dashboard />} />
+          <Route path="/workouts" element={<Workouts />} />
+          <Route path="/nutrition" element={<Nutrition />} />
+          <Route path="/progress" element={<Progress />} />
+          <Route path="/settings" element={<Settings />} />
+        </Routes>
+      </div>
+      {isMobile && <BottomNav />}
     </div>
   )
 }
