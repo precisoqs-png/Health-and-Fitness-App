@@ -1,4 +1,5 @@
 import { useState } from 'react'
+import { useToast } from '../context/ToastContext'
 import { useApp, todayISO } from '../context/AppContext'
 import { useMobile } from '../hooks/useMobile'
 import Card from '../components/Card'
@@ -8,6 +9,7 @@ const emptyForm = { name: '', time: '', items: '', calories: '', protein: '', ca
 
 export default function Nutrition() {
   const { meals, addMeal, deleteMeal, profile, dailyLog, addWater } = useApp()
+  const { showToast } = useToast()
   const isMobile = useMobile()
   const [showForm, setShowForm] = useState(false)
   const [form, setForm] = useState(emptyForm)
@@ -32,9 +34,11 @@ export default function Nutrition() {
       protein: Number(form.protein) || 0,
       carbs: Number(form.carbs) || 0,
       fat: Number(form.fat) || 0,
+      date: new Date().toISOString(),
     })
     setForm(emptyForm)
     setShowForm(false)
+    showToast("Meal logged ✓")
     setError('')
   }
 
@@ -117,7 +121,7 @@ export default function Nutrition() {
           )}
 
           {todayMeals.map((meal) => (
-            <MealCard key={meal.id} meal={meal} onDelete={() => deleteMeal(meal.id)} />
+            <MealCard key={meal.id} meal={meal} onDelete={() => { deleteMeal(meal.id); showToast('Meal deleted', 'info') }} />
           ))}
 
           {showForm ? (

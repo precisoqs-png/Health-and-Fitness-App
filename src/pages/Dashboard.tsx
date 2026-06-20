@@ -1,5 +1,7 @@
 import { useState } from 'react'
+import { Link } from 'react-router-dom'
 import { useApp, todayISO, calcStreak } from '../context/AppContext'
+import { useToast } from '../context/ToastContext'
 import { useMobile } from '../hooks/useMobile'
 import StatCard from '../components/StatCard'
 import Card from '../components/Card'
@@ -7,7 +9,8 @@ import Card from '../components/Card'
 const DAYS = ['Sun', 'Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat']
 
 export default function Dashboard() {
-  const { workouts, meals, profile, dailyLog, addWater, setSteps } = useApp()
+  const { workouts, meals, profile, dailyLog, isNewUser, addWater, setSteps } = useApp()
+  const { showToast } = useToast()
   const isMobile = useMobile()
   const [editingSteps, setEditingSteps] = useState(false)
   const [stepsInput, setStepsInput] = useState('')
@@ -32,7 +35,6 @@ export default function Dashboard() {
     const dayWorkouts = workouts.filter(w => w.date.slice(0, 10) === iso)
     return {
       day: DAYS[d.getDay()],
-      iso,
       type: dayWorkouts.length > 0 ? dayWorkouts.map(w => w.type).join(', ') : 'Rest Day',
       duration: dayWorkouts.reduce((s, w) => s + w.duration, 0),
       calories: dayWorkouts.reduce((s, w) => s + w.calories, 0),
@@ -40,11 +42,7 @@ export default function Dashboard() {
     }
   })
 
-  const weekWorkouts = workouts.filter(w => {
-    const diff = (Date.now() - new Date(w.date).getTime()) / (1000 * 60 * 60 * 24)
-    return diff <= 7
-  })
-
+  const weekWorkouts = workouts.filter(w => (Date.now() - new Date(w.date).getTime()) / 86400000 <= 7)
   const totalCalsThisWeek = weekWorkouts.reduce((s, w) => s + w.calories, 0)
   const totalTimeThisWeek = weekWorkouts.reduce((s, w) => s + w.duration, 0)
   const h = Math.floor(totalTimeThisWeek / 60)
@@ -55,8 +53,42 @@ export default function Dashboard() {
   const calConsumed = todayMeals.reduce((s, m) => s + m.calories, 0)
   const calRemaining = profile.dailyCalorieGoal - calConsumed + caloriesBurned
 
+  function handleWater(amt: number) {
+    addWater(amt)
+    if (amt > 0) showToast(`+${amt}L water logged 💧`)
+  }
+
+  function handleStepsSave(e: React.FormEvent) {
+    e.preventDefault()
+    const steps = Number(stepsInput)
+    setSteps(steps)
+    showToast(`Steps updated: ${steps.toLocaleString()} 👟`)
+    setEditingSteps(false)
+  }
+
   return (
     <div style={{ maxWidth: 1200, margin: '0 auto', padding: isMobile ? '24px 16px' : '40px 24px' }}>
+
+      {/* Onboarding banner for new users */}
+      {isNewUser && (
+        <div style={{ background: 'linear-gradient(135deg, rgba(249,115,22,0.15), rgba(249,115,22,0.05))', border: '1px solid rgba(249,115,22,0.3)', borderRadius: 16, padding: isMobile ? '20px 20px' : '24px 32px', marginBottom: 28 }}>
+          <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: isMobile ? 'flex-start' : 'center', gap: 16, flexDirection: isMobile ? 'column' : 'row' }}>
+            <div>
+              <p style={{ fontSize: 22, marginBottom: 6 }}>👋</p>
+              <h2 style={{ fontWeight: 700, fontSize: isMobile ? 17 : 20, marginBottom: 6, color: '#f97316' }}>Welcome to Velocity Fitness!</h2>
+              <p style={{ color: '#94a3b8', fontSize: 14, lineHeight: 1.6 }}>
+                Start by setting your name and daily goals, then log your first workout or meal.
+              </p>
+            </div>
+            <div style={{ display: 'flex', gap: 10, flexShrink: 0 }}>
+              <Link to="/settings" style={{ background: '#f97316', color: '#fff', padding: '10px 20px', borderRadius: 8, fontWeight: 600, fontSize: 14, textDecoration: 'none', whiteSpace: 'nowrap' }}>
+                Set up profile →
+              </Link>
+            </div>
+          </div>
+        </div>
+      )}
+
       <div style={{ marginBottom: 24 }}>
         <p style={{ color: '#64748b', fontSize: 13, marginBottom: 4 }}>{todayStr}</p>
         <h1 style={{ fontSize: isMobile ? 22 : 28, fontWeight: 700, letterSpacing: '-0.5px' }}>
@@ -67,56 +99,53 @@ export default function Dashboard() {
         )}
       </div>
 
-      <div style={{ display: 'grid', gridTemplateColumns: isMobile ? '1fr 1fr' : 'repeat(auto-fit, minmax(220px, 1fr))', gap: isMobile ? 12 : 20, marginBottom: 28 }}>
-        {stats.map(s => <StatCard key={s.label} {...s} />)}
+      <div style={{ display: 'grid', gridTemplateColumns: isMobile ? '1fr 1fr' : 'repeat(auto-fit, minmax(200px, 1fr))', gap: isMobile ? 12 : 20, marginBottom: 24 }}>
+        {stats.map(s => <StatCard key={s.label} {...s} isMobile={isMobile} />)}
       </div>
 
-      {/* Quick-action row */}
-      <div style={{ display: 'grid', gridTemplateColumns: isMobile ? '1fr' : '1fr 1fr', gap: 16, marginBottom: 28 }}>
-        {/* Water logging */}
+      {/* Calorie balance */}
+      <Card style={{ marginBottom: 20 }}>
+        <h2 style={{ fontWeight: 600, fontSize: 15, marginBottom: 14 }}>🍽️ Today's Calorie Balance</h2>
+        <div style={{ display: 'grid', gridTemplateColumns: 'repeat(3, 1fr)', gap: 10, textAlign: 'center' }}>
+          {[
+            { label: 'Goal', value: profile.dailyCalorieGoal, color: '#94a3b8' },
+            { label: 'Consumed', value: calConsumed, color: '#f97316' },
+            { label: 'Remaining', value: calRemaining, color: calRemaining >= 0 ? '#22c55e' : '#ef4444' },
+          ].map(({ label, value, color }) => (
+            <div key={label} style={{ background: '#0f0f1a', borderRadius: 10, padding: isMobile ? '12px 6px' : '14px 8px' }}>
+              <p style={{ fontSize: isMobile ? 18 : 22, fontWeight: 700, color }}>{value.toLocaleString()}</p>
+              <p style={{ fontSize: 12, color: '#64748b', marginTop: 2 }}>{label}</p>
+            </div>
+          ))}
+        </div>
+      </Card>
+
+      {/* Quick actions */}
+      <div style={{ display: 'grid', gridTemplateColumns: isMobile ? '1fr' : '1fr 1fr', gap: 16, marginBottom: 24 }}>
         <Card>
-          <h2 style={{ fontWeight: 600, fontSize: 15, marginBottom: 14 }}>💧 Log Water</h2>
-          <div style={{ display: 'flex', gap: 8, flexWrap: 'wrap' }}>
+          <h2 style={{ fontWeight: 600, fontSize: 15, marginBottom: 12 }}>💧 Log Water</h2>
+          <div style={{ display: 'flex', gap: 8, flexWrap: 'wrap', marginBottom: 10 }}>
             {[0.25, 0.5, 0.75, 1].map(amt => (
-              <button
-                key={amt}
-                onClick={() => addWater(amt)}
-                style={{ background: 'rgba(59,130,246,0.12)', border: '1px solid rgba(59,130,246,0.3)', borderRadius: 8, padding: '8px 14px', color: '#3b82f6', fontSize: 13, fontWeight: 600, cursor: 'pointer' }}
-              >
+              <button key={amt} onClick={() => handleWater(amt)} style={{ background: 'rgba(59,130,246,0.12)', border: '1px solid rgba(59,130,246,0.3)', borderRadius: 8, padding: '8px 14px', color: '#3b82f6', fontSize: 13, fontWeight: 600, cursor: 'pointer' }}>
                 +{amt}L
               </button>
             ))}
             {dailyLog.water > 0 && (
-              <button
-                onClick={() => addWater(-0.25)}
-                style={{ background: 'transparent', border: '1px solid #2a2a3e', borderRadius: 8, padding: '8px 12px', color: '#64748b', fontSize: 13, cursor: 'pointer' }}
-              >
-                −
-              </button>
+              <button onClick={() => addWater(-0.25)} style={{ background: 'transparent', border: '1px solid #2a2a3e', borderRadius: 8, padding: '8px 12px', color: '#64748b', fontSize: 13, cursor: 'pointer' }}>−0.25L</button>
             )}
           </div>
-          <p style={{ marginTop: 10, fontSize: 13, color: '#64748b' }}>
-            {dailyLog.water.toFixed(2)}L logged · {Math.max(0, profile.waterGoal - dailyLog.water).toFixed(2)}L remaining
+          <p style={{ fontSize: 13, color: '#64748b' }}>
+            <span style={{ color: '#3b82f6', fontWeight: 600 }}>{dailyLog.water.toFixed(2)}L</span> logged · {Math.max(0, profile.waterGoal - dailyLog.water).toFixed(2)}L remaining
           </p>
         </Card>
 
-        {/* Steps logging */}
         <Card>
-          <h2 style={{ fontWeight: 600, fontSize: 15, marginBottom: 14 }}>👟 Log Steps</h2>
+          <h2 style={{ fontWeight: 600, fontSize: 15, marginBottom: 12 }}>👟 Log Steps</h2>
           {editingSteps ? (
-            <form onSubmit={e => { e.preventDefault(); setSteps(Number(stepsInput) || 0); setEditingSteps(false) }} style={{ display: 'flex', gap: 8 }}>
-              <input
-                type="number"
-                min="0"
-                max="99999"
-                autoFocus
-                value={stepsInput}
-                onChange={e => setStepsInput(e.target.value)}
-                placeholder="e.g. 7500"
-                style={{ flex: 1, background: '#0f0f1a', border: '1px solid #2a2a3e', borderRadius: 8, padding: '8px 12px', color: '#e2e8f0', fontSize: 14, outline: 'none' }}
-              />
-              <button type="submit" style={{ background: '#f97316', color: '#fff', border: 'none', borderRadius: 8, padding: '8px 16px', fontWeight: 600, cursor: 'pointer', fontSize: 13 }}>Save</button>
-              <button type="button" onClick={() => setEditingSteps(false)} style={{ background: 'transparent', border: '1px solid #2a2a3e', borderRadius: 8, padding: '8px 12px', color: '#64748b', cursor: 'pointer', fontSize: 13 }}>✕</button>
+            <form onSubmit={handleStepsSave} style={{ display: 'flex', gap: 8 }}>
+              <input type="number" min="0" max="99999" autoFocus value={stepsInput} onChange={e => setStepsInput(e.target.value)} placeholder="e.g. 7500" style={{ flex: 1, background: '#0f0f1a', border: '1px solid #2a2a3e', borderRadius: 8, padding: '9px 12px', color: '#e2e8f0', fontSize: 14, outline: 'none' }} />
+              <button type="submit" style={{ background: '#f97316', color: '#fff', border: 'none', borderRadius: 8, padding: '9px 16px', fontWeight: 600, cursor: 'pointer', fontSize: 13 }}>Save</button>
+              <button type="button" onClick={() => setEditingSteps(false)} style={{ background: 'transparent', border: '1px solid #2a2a3e', borderRadius: 8, padding: '9px 12px', color: '#64748b', cursor: 'pointer', fontSize: 13 }}>✕</button>
             </form>
           ) : (
             <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
@@ -124,33 +153,13 @@ export default function Dashboard() {
                 <p style={{ fontSize: 28, fontWeight: 700, color: '#f97316' }}>{dailyLog.steps.toLocaleString()}</p>
                 <p style={{ fontSize: 13, color: '#64748b' }}>of {profile.dailyStepGoal.toLocaleString()} goal</p>
               </div>
-              <button
-                onClick={() => { setStepsInput(dailyLog.steps.toString()); setEditingSteps(true) }}
-                style={{ background: 'rgba(249,115,22,0.1)', border: '1px solid rgba(249,115,22,0.3)', borderRadius: 8, padding: '8px 16px', color: '#f97316', fontSize: 13, fontWeight: 600, cursor: 'pointer' }}
-              >
+              <button onClick={() => { setStepsInput(dailyLog.steps.toString()); setEditingSteps(true) }} style={{ background: 'rgba(249,115,22,0.1)', border: '1px solid rgba(249,115,22,0.3)', borderRadius: 8, padding: '8px 16px', color: '#f97316', fontSize: 13, fontWeight: 600, cursor: 'pointer' }}>
                 Update
               </button>
             </div>
           )}
         </Card>
       </div>
-
-      {/* Calorie balance */}
-      <Card style={{ marginBottom: 24 }}>
-        <h2 style={{ fontWeight: 600, fontSize: 15, marginBottom: 14 }}>🍽️ Today's Calorie Balance</h2>
-        <div style={{ display: 'grid', gridTemplateColumns: 'repeat(3, 1fr)', gap: 12, textAlign: 'center' }}>
-          {[
-            { label: 'Goal', value: profile.dailyCalorieGoal, color: '#94a3b8' },
-            { label: 'Consumed', value: calConsumed, color: '#f97316' },
-            { label: 'Remaining', value: calRemaining, color: calRemaining >= 0 ? '#22c55e' : '#ef4444' },
-          ].map(({ label, value, color }) => (
-            <div key={label} style={{ background: '#0f0f1a', borderRadius: 10, padding: '14px 8px' }}>
-              <p style={{ fontSize: 22, fontWeight: 700, color }}>{value.toLocaleString()}</p>
-              <p style={{ fontSize: 12, color: '#64748b', marginTop: 2 }}>{label}</p>
-            </div>
-          ))}
-        </div>
-      </Card>
 
       <div style={{ display: 'grid', gridTemplateColumns: isMobile ? '1fr' : '2fr 1fr', gap: 20 }}>
         <Card>
