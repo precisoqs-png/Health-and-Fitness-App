@@ -3,7 +3,6 @@ import { useAuth } from '../context/AuthContext'
 import { useMobile } from '../hooks/useMobile'
 
 const navItems = [
-  { to: '/', label: 'Home', icon: '🏠' },
   { to: '/dashboard', label: 'Dashboard', icon: '📊' },
   { to: '/workouts', label: 'Workouts', icon: '💪' },
   { to: '/nutrition', label: 'Nutrition', icon: '🥗' },
@@ -28,7 +27,6 @@ export default function Navbar() {
               <NavLink
                 key={to}
                 to={to}
-                end={to === '/'}
                 style={({ isActive }) => ({
                   display: 'flex',
                   alignItems: 'center',
@@ -52,15 +50,7 @@ export default function Navbar() {
         {user && (
           <button
             onClick={signOut}
-            style={{
-              background: 'transparent',
-              border: '1px solid #2a2a3e',
-              borderRadius: 8,
-              padding: '7px 14px',
-              fontSize: 13,
-              color: '#64748b',
-              cursor: 'pointer',
-            }}
+            style={{ background: 'transparent', border: '1px solid #2a2a3e', borderRadius: 8, padding: '7px 14px', fontSize: 13, color: '#64748b', cursor: 'pointer' }}
           >
             Sign out
           </button>

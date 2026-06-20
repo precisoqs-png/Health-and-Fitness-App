@@ -1,7 +1,6 @@
 import { NavLink } from 'react-router-dom'
 
 const navItems = [
-  { to: '/', label: 'Home', icon: '🏠' },
   { to: '/dashboard', label: 'Dashboard', icon: '📊' },
   { to: '/workouts', label: 'Workouts', icon: '💪' },
   { to: '/nutrition', label: 'Nutrition', icon: '🥗' },
@@ -26,7 +25,6 @@ export default function BottomNav() {
         <NavLink
           key={to}
           to={to}
-          end={to === '/'}
           style={({ isActive }) => ({
             flex: 1,
             display: 'flex',

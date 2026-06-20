@@ -43,15 +43,26 @@ export interface Profile {
   fatGoal: number
 }
 
+export interface DailyLog {
+  date: string
+  steps: number
+  water: number // litres
+}
+
 interface AppState {
   profile: Profile
   workouts: Workout[]
   meals: Meal[]
   goals: Goal[]
+  dailyLog: DailyLog
   addWorkout: (w: Omit<Workout, 'id' | 'date'>) => Promise<void>
+  deleteWorkout: (id: string) => Promise<void>
   addMeal: (m: Omit<Meal, 'id' | 'date'>) => Promise<void>
+  deleteMeal: (id: string) => Promise<void>
   updateGoalProgress: (label: string, progress: number) => Promise<void>
   updateProfile: (p: Partial<Profile>) => Promise<void>
+  addWater: (amount: number) => void
+  setSteps: (steps: number) => void
 }
 
 const defaultProfile: Profile = {
@@ -71,7 +82,10 @@ const defaultGoals: Goal[] = [
   { label: 'Hit protein goal 30 days', progress: 22, total: 30, unit: 'days', icon: '🥩', color: '#ef4444' },
 ]
 
-// localStorage fallback helpers
+function todayLog(): DailyLog {
+  return { date: todayISO(), steps: 0, water: 0 }
+}
+
 function load<T>(key: string, fallback: T): T {
   try {
     const raw = localStorage.getItem(key)
@@ -80,6 +94,31 @@ function load<T>(key: string, fallback: T): T {
 }
 function save<T>(key: string, value: T) {
   try { localStorage.setItem(key, JSON.stringify(value)) } catch { /* ignore */ }
+}
+
+// Calculate consecutive workout streak from dated workouts
+export function calcStreak(workouts: Workout[]): number {
+  if (workouts.length === 0) return 0
+  const days = new Set(workouts.map(w => w.date.slice(0, 10)))
+  const sorted = Array.from(days).sort().reverse()
+  const today = todayISO()
+  const yesterday = new Date()
+  yesterday.setDate(yesterday.getDate() - 1)
+  const yISO = yesterday.toISOString().slice(0, 10)
+  // Streak must include today or yesterday to be active
+  if (sorted[0] !== today && sorted[0] !== yISO) return 0
+  let streak = 1
+  for (let i = 1; i < sorted.length; i++) {
+    const prev = new Date(sorted[i - 1])
+    const curr = new Date(sorted[i])
+    prev.setDate(prev.getDate() - 1)
+    if (prev.toISOString().slice(0, 10) === curr.toISOString().slice(0, 10)) {
+      streak++
+    } else {
+      break
+    }
+  }
+  return streak
 }
 
 const AppContext = createContext<AppState | null>(null)
@@ -91,14 +130,17 @@ export function AppProvider({ children }: { children: ReactNode }) {
   const [workouts, setWorkouts] = useState<Workout[]>(() => load('vf_workouts', []))
   const [meals, setMeals] = useState<Meal[]>(() => load('vf_meals', []))
   const [goals, setGoals] = useState<Goal[]>(() => load('vf_goals', defaultGoals))
+  const [dailyLog, setDailyLog] = useState<DailyLog>(() => {
+    const saved = load<DailyLog>('vf_daily', todayLog())
+    return saved.date === todayISO() ? saved : todayLog()
+  })
 
-  // Persist to localStorage as fallback
   useEffect(() => { save('vf_profile', profile) }, [profile])
   useEffect(() => { save('vf_workouts', workouts) }, [workouts])
   useEffect(() => { save('vf_meals', meals) }, [meals])
   useEffect(() => { save('vf_goals', goals) }, [goals])
+  useEffect(() => { save('vf_daily', dailyLog) }, [dailyLog])
 
-  // Load from Supabase when user logs in
   const loadFromSupabase = useCallback(async (uid: string) => {
     const [{ data: wData }, { data: mData }, { data: gData }, { data: pData }] = await Promise.all([
       supabase.from('workouts').select('*').eq('user_id', uid).order('date', { ascending: false }),
@@ -119,36 +161,46 @@ export function AppProvider({ children }: { children: ReactNode }) {
   async function addWorkout(w: Omit<Workout, 'id' | 'date'>) {
     const newW: Workout = { ...w, id: crypto.randomUUID(), date: new Date().toISOString() }
     setWorkouts(prev => [newW, ...prev])
-    if (user) {
-      await supabase.from('workouts').insert({ ...newW, user_id: user.id })
-    }
+    if (user) await supabase.from('workouts').insert({ ...newW, user_id: user.id })
+  }
+
+  async function deleteWorkout(id: string) {
+    setWorkouts(prev => prev.filter(w => w.id !== id))
+    if (user) await supabase.from('workouts').delete().eq('id', id).eq('user_id', user.id)
   }
 
   async function addMeal(m: Omit<Meal, 'id' | 'date'>) {
     const newM: Meal = { ...m, id: crypto.randomUUID(), date: new Date().toISOString() }
     setMeals(prev => [...prev, newM])
-    if (user) {
-      await supabase.from('meals').insert({ ...newM, user_id: user.id, items: JSON.stringify(newM.items) })
-    }
+    if (user) await supabase.from('meals').insert({ ...newM, user_id: user.id, items: JSON.stringify(newM.items) })
+  }
+
+  async function deleteMeal(id: string) {
+    setMeals(prev => prev.filter(m => m.id !== id))
+    if (user) await supabase.from('meals').delete().eq('id', id).eq('user_id', user.id)
   }
 
   async function updateGoalProgress(label: string, progress: number) {
     setGoals(prev => prev.map(g => g.label === label ? { ...g, progress } : g))
-    if (user) {
-      await supabase.from('goals').upsert({ user_id: user.id, label, progress }, { onConflict: 'user_id,label' })
-    }
+    if (user) await supabase.from('goals').upsert({ user_id: user.id, label, progress }, { onConflict: 'user_id,label' })
   }
 
   async function updateProfile(p: Partial<Profile>) {
     const updated = { ...profile, ...p }
     setProfile(updated)
-    if (user) {
-      await supabase.from('profiles').upsert({ ...updated, user_id: user.id }, { onConflict: 'user_id' })
-    }
+    if (user) await supabase.from('profiles').upsert({ ...updated, user_id: user.id }, { onConflict: 'user_id' })
+  }
+
+  function addWater(amount: number) {
+    setDailyLog(prev => ({ ...prev, water: Math.max(0, +(prev.water + amount).toFixed(2)) }))
+  }
+
+  function setSteps(steps: number) {
+    setDailyLog(prev => ({ ...prev, steps: Math.max(0, steps) }))
   }
 
   return (
-    <AppContext.Provider value={{ profile, workouts, meals, goals, addWorkout, addMeal, updateGoalProgress, updateProfile }}>
+    <AppContext.Provider value={{ profile, workouts, meals, goals, dailyLog, addWorkout, deleteWorkout, addMeal, deleteMeal, updateGoalProgress, updateProfile, addWater, setSteps }}>
       {children}
     </AppContext.Provider>
   )
