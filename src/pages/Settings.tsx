@@ -129,31 +129,39 @@ export default function Settings() {
               </label>
             </div>
 
+            {/* Dynamic target banner — shown prominently when goal weight differs */}
+            {Math.abs(form.goalWeight - calcWeight) > 0.5 && (
+              <div style={{ background: '#1e3a8a22', border: '1px solid var(--accent)', borderRadius: 12, padding: '14px 16px', marginBottom: 4 }}>
+                <p style={{ fontSize: 11, fontWeight: 700, color: 'var(--accent)', textTransform: 'uppercase', letterSpacing: 1, marginBottom: 6 }}>Your Personalised Calorie Target</p>
+                <p style={{ fontSize: isMobile ? 24 : 30, fontWeight: 800, color: 'var(--accent)', marginBottom: 4 }}>{targetCals.toLocaleString()} <span style={{ fontSize: 14, fontWeight: 500 }}>kcal/day</span></p>
+                <p style={{ fontSize: 13, color: 'var(--text)' }}>
+                  {dynTarget.weeklyChange > 0
+                    ? <>To lose <strong>{dynTarget.weeklyChange.toFixed(2)} kg/week</strong> and reach <strong>{form.goalWeight} kg</strong> in <strong>{form.targetWeeks || 12} weeks</strong></>
+                    : <>To gain <strong>{Math.abs(dynTarget.weeklyChange).toFixed(2)} kg/week</strong> and reach <strong>{form.goalWeight} kg</strong> in <strong>{form.targetWeeks || 12} weeks</strong></>}
+                  {dynTarget.capped && <span style={{ color: '#f59e0b', display: 'block', marginTop: 4, fontSize: 12 }}>⚠️ Floor applied — going lower than 1,300 kcal/day is unsafe</span>}
+                </p>
+                {latestWeight && (
+                  <p style={{ fontSize: 12, color: 'var(--text-muted)', marginTop: 6 }}>
+                    Based on your last weigh-in: {latestWeight.weight} kg on {new Date(latestWeight.date).toLocaleDateString('en-AU', { day: 'numeric', month: 'short', year: 'numeric' })}
+                  </p>
+                )}
+              </div>
+            )}
+
             <div style={{ background: 'var(--bg)', border: '1px solid #2a2a3e', borderRadius: 10, padding: '14px 16px', marginTop: 4 }}>
+              <p style={{ fontSize: 11, color: 'var(--text-subtle)', fontWeight: 600, textTransform: 'uppercase', letterSpacing: 0.5, marginBottom: 10 }}>Reference ranges</p>
               <div style={{ display: 'grid', gridTemplateColumns: 'repeat(3, 1fr)', gap: 12, marginBottom: 14 }}>
                 {[
                   { label: 'BMR', value: bmr + ' kcal', sub: 'base metabolic rate' },
                   { label: 'TDEE', value: tdee + ' kcal', sub: 'total daily expenditure' },
-                  { label: 'Target', value: targetCals + ' kcal', sub: 'daily calorie goal' },
+                  { label: 'Activity Target', value: targetCals + ' kcal', sub: 'goal-adjusted' },
                 ].map(({ label, value, sub }) => (
-                  <div key={label} style={{ textAlign: 'center' }}>
+                  <div key={label} style={{ textAlign: 'center', opacity: 0.75 }}>
                     <p style={{ fontSize: 11, color: 'var(--text-muted)', marginBottom: 2 }}>{label}</p>
-                    <p style={{ fontSize: isMobile ? 15 : 20, fontWeight: 700, color: 'var(--accent)' }}>{value}</p>
+                    <p style={{ fontSize: isMobile ? 14 : 18, fontWeight: 700, color: 'var(--text-muted)' }}>{value}</p>
                     <p style={{ fontSize: 10, color: 'var(--text-subtle)' }}>{sub}</p>
                   </div>
                 ))}
-              </div>
-              <div style={{ background: 'var(--card)', borderRadius: 8, padding: '10px 14px', marginBottom: 12, fontSize: 13, color: 'var(--text)', lineHeight: 1.5 }}>
-                {dynTarget.weeklyChange > 0
-                  ? <>Target: <strong style={{ color: 'var(--accent)' }}>{targetCals.toLocaleString()} kcal/day</strong> to lose <strong style={{ color: 'var(--accent)' }}>{dynTarget.weeklyChange.toFixed(2)} kg/week</strong> and reach your goal in <strong style={{ color: 'var(--accent)' }}>{form.targetWeeks || 12} weeks</strong>{dynTarget.capped && <span style={{ color: '#f59e0b' }}> (floor applied — below minimum is unsafe)</span>}</>
-                  : dynTarget.weeklyChange < 0
-                  ? <>Target: <strong style={{ color: 'var(--accent)' }}>{targetCals.toLocaleString()} kcal/day</strong> to gain <strong style={{ color: 'var(--accent)' }}>{Math.abs(dynTarget.weeklyChange).toFixed(2)} kg/week</strong> over <strong style={{ color: 'var(--accent)' }}>{form.targetWeeks || 12} weeks</strong></>
-                  : <>Target: <strong style={{ color: 'var(--accent)' }}>{targetCals.toLocaleString()} kcal/day</strong> to maintain weight</>}
-                {latestWeight && (
-                  <p style={{ fontSize: 12, color: 'var(--text-muted)', marginTop: 4 }}>
-                    Based on your last weigh-in: {latestWeight.weight} kg on {new Date(latestWeight.date).toLocaleDateString('en-AU', { day: 'numeric', month: 'short', year: 'numeric' })}
-                  </p>
-                )}
               </div>
               <div style={{ display: 'grid', gridTemplateColumns: 'repeat(3, 1fr)', gap: 8, marginBottom: 12 }}>
                 {[

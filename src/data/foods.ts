@@ -80,4 +80,44 @@ export const BUILT_IN_FOODS: FoodItem[] = [
   { id: 'f58', name: 'Orange Juice', calories: 45, protein: 0.7, carbs: 10, fat: 0.2, servingSize: 250, category: 'Beverages' },
   { id: 'f59', name: 'Coffee (black)', calories: 2, protein: 0.3, carbs: 0, fat: 0, servingSize: 240, category: 'Beverages' },
   { id: 'f60', name: 'Protein Shake (with milk)', calories: 200, protein: 25, carbs: 15, fat: 5, servingSize: 350, category: 'Beverages' },
+  // Cereals & Breakfast
+  { id: 'f61', name: 'Weet-Bix (2 biscuits)', calories: 340, protein: 11, carbs: 67, fat: 1.5, servingSize: 30, category: 'Cereals' },
+  { id: 'f62', name: 'Rolled Oats (dry, 100g)', calories: 389, protein: 16.9, carbs: 66, fat: 6.9, servingSize: 100, category: 'Cereals' },
+  { id: 'f63', name: 'Muesli (toasted)', calories: 400, protein: 9, carbs: 62, fat: 12, servingSize: 60, category: 'Cereals' },
+  { id: 'f64', name: 'Corn Flakes', calories: 357, protein: 7, carbs: 84, fat: 0.9, servingSize: 30, category: 'Cereals' },
+  { id: 'f65', name: 'All-Bran', calories: 290, protein: 13, carbs: 46, fat: 3, servingSize: 45, category: 'Cereals' },
+  { id: 'f66', name: 'Special K', calories: 378, protein: 17, carbs: 72, fat: 1.3, servingSize: 30, category: 'Cereals' },
+  { id: 'f67', name: 'Granola (100g)', calories: 471, protein: 8, carbs: 64, fat: 20, servingSize: 60, category: 'Cereals' },
+  // Additional Dairy
+  { id: 'f68', name: 'Almond Milk (unsweetened)', calories: 15, protein: 0.6, carbs: 0.3, fat: 1.2, servingSize: 250, category: 'Dairy' },
+  { id: 'f69', name: 'Full Fat Milk (250ml)', calories: 61, protein: 3.2, carbs: 4.8, fat: 3.3, servingSize: 250, category: 'Dairy' },
+  // Additional Proteins
+  { id: 'f70', name: 'Chicken Thigh (cooked)', calories: 209, protein: 26, carbs: 0, fat: 11, servingSize: 150, category: 'Protein' },
+  { id: 'f71', name: 'Pork Tenderloin (cooked)', calories: 143, protein: 26, carbs: 0, fat: 3.5, servingSize: 150, category: 'Protein' },
+  { id: 'f72', name: 'Tempeh', calories: 195, protein: 19, carbs: 9, fat: 11, servingSize: 100, category: 'Protein' },
+  { id: 'f73', name: 'Casein Protein (30g)', calories: 110, protein: 24, carbs: 3, fat: 1, servingSize: 30, category: 'Protein' },
+  { id: 'f74', name: 'Salmon Fillet (150g)', calories: 208, protein: 28, carbs: 0, fat: 10, servingSize: 150, category: 'Protein' },
+  // Additional Carbs
+  { id: 'f75', name: 'Couscous (cooked, 100g)', calories: 112, protein: 3.8, carbs: 23, fat: 0.2, servingSize: 100, category: 'Carbs' },
+  { id: 'f76', name: 'Potato (boiled, 100g)', calories: 78, protein: 2, carbs: 17, fat: 0.1, servingSize: 100, category: 'Carbs' },
+  // Additional Vegetables
+  { id: 'f77', name: 'Kale (raw)', calories: 49, protein: 4.3, carbs: 9, fat: 0.9, servingSize: 60, category: 'Vegetables' },
+  { id: 'f78', name: 'Mushrooms (raw)', calories: 22, protein: 3.1, carbs: 3.3, fat: 0.3, servingSize: 100, category: 'Vegetables' },
+  { id: 'f79', name: 'Onion (raw)', calories: 40, protein: 1.1, carbs: 9.3, fat: 0.1, servingSize: 80, category: 'Vegetables' },
+  // Additional Fruits
+  { id: 'f80', name: 'Grapes (100g)', calories: 69, protein: 0.7, carbs: 18, fat: 0.2, servingSize: 100, category: 'Fruit' },
+  { id: 'f81', name: 'Watermelon (100g)', calories: 30, protein: 0.6, carbs: 7.5, fat: 0.2, servingSize: 200, category: 'Fruit' },
+  { id: 'f82', name: 'Pineapple (100g)', calories: 50, protein: 0.5, carbs: 13, fat: 0.1, servingSize: 120, category: 'Fruit' },
+  // Additional Snacks
+  { id: 'f83', name: 'Almond Butter (1 tbsp)', calories: 614, protein: 21, carbs: 19, fat: 56, servingSize: 16, category: 'Snacks' },
+  { id: 'f84', name: 'Mixed Nuts (30g)', calories: 607, protein: 15, carbs: 21, fat: 54, servingSize: 30, category: 'Snacks' },
+  { id: 'f85', name: 'Honey (1 tbsp)', calories: 304, protein: 0.3, carbs: 82, fat: 0, servingSize: 21, category: 'Snacks' },
+  { id: 'f86', name: 'Whey Protein (30g serving)', calories: 120, protein: 25, carbs: 3, fat: 2, servingSize: 30, category: 'Snacks' },
+  // Meals / Fast Food
+  { id: 'f87', name: 'Chicken & Rice (meal)', calories: 186, protein: 20, carbs: 17, fat: 4, servingSize: 350, category: 'Meals' },
+  { id: 'f88', name: 'Steak & Veggies (meal)', calories: 200, protein: 28, carbs: 8, fat: 7, servingSize: 400, category: 'Meals' },
+  { id: 'f89', name: 'Spaghetti Bolognese', calories: 180, protein: 12, carbs: 22, fat: 5, servingSize: 350, category: 'Meals' },
+  { id: 'f90', name: 'Fish & Chips', calories: 230, protein: 12, carbs: 27, fat: 8, servingSize: 400, category: 'Meals' },
+  { id: 'f91', name: 'Caesar Salad (250g)', calories: 150, protein: 8, carbs: 9, fat: 10, servingSize: 250, category: 'Meals' },
+  { id: 'f92', name: 'Sushi Roll (6 pieces)', calories: 200, protein: 9, carbs: 35, fat: 2, servingSize: 180, category: 'Meals' },
 ]

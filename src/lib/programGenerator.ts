@@ -402,27 +402,71 @@ function buildGymName(parsed: ParsedPrompt): string {
   return `${parsed.weeks}-Week ${muscleLabel} ${goalLabel} Program`
 }
 
-function applyOverload(sets: number, weekNum: number, totalWeeks: number): number {
-  const third = Math.floor(totalWeeks / 3)
-  if (weekNum > third * 2) return sets + 2
-  if (weekNum > third) return sets + 1
-  return sets
+function getGymPhase(weekNum: number, totalWeeks: number): string {
+  const pct = (weekNum - 1) / Math.max(totalWeeks - 1, 1)
+  if (pct < 0.25) return 'Phase 1: Foundation'
+  if (pct < 0.50) return 'Phase 2: Build'
+  if (pct < 0.75) return 'Phase 3: Overload'
+  return 'Phase 4: Peak Strength'
+}
+
+function isGymDeload(weekNum: number): boolean {
+  return weekNum % 4 === 0
+}
+
+function gymSets(base: number, weekNum: number, totalWeeks: number): number {
+  if (isGymDeload(weekNum)) return Math.max(2, base - 1)
+  const pct = (weekNum - 1) / Math.max(totalWeeks - 1, 1)
+  if (pct < 0.25) return base
+  if (pct < 0.50) return base + 1
+  if (pct < 0.75) return base + 2
+  return base + 2
+}
+
+function gymReps(base: string, weekNum: number, _goal: GoalKey): string {
+  if (isGymDeload(weekNum)) {
+    const lo = base.split('-')[0]
+    return `${lo} reps @ 60% load (deload — focus on form)`
+  }
+  const rpe = Math.min(9, 6 + Math.floor(weekNum / 3))
+  if (base.includes('-')) {
+    const [lo, hi] = base.split('-').map(Number)
+    if (weekNum <= 3) return `${lo}–${hi} reps @ RPE ${rpe}`
+    if (weekNum <= 7) return `${lo + 1}–${hi + 1} reps @ RPE ${rpe}`
+    return `${lo + 2}–${hi + 2} reps @ RPE ${rpe}`
+  }
+  return `${base} reps @ RPE ${rpe}`
+}
+
+function gymRest(base: number, weekNum: number, goal: GoalKey): number {
+  if (isGymDeload(weekNum)) return Math.max(60, base - 30)
+  const pct = (weekNum - 1) / 52
+  if (goal === 'strength' && pct > 0.6) return base + 30
+  return base
 }
 
 function buildGymPlan(parsed: ParsedPrompt): { name: string; weeks: ProgramWeek[] } {
   const dayTemplates = buildDayTemplates(parsed)
   const name = buildGymName(parsed)
-  const weeks: ProgramWeek[] = Array.from({ length: parsed.weeks }, (_, wi) => {
+  const totalWeeks = parsed.weeks
+
+  const weeks: ProgramWeek[] = Array.from({ length: totalWeeks }, (_, wi) => {
     const weekNumber = wi + 1
+    const deload = isGymDeload(weekNumber)
+    const phase = deload ? `Wk ${weekNumber}: Deload 🔄` : `${getGymPhase(weekNumber, totalWeeks)} — Wk ${weekNumber}`
+
     return {
       weekNumber,
       days: dayTemplates.map(template => ({
         id: crypto.randomUUID(),
-        label: template.label,
+        label: `${template.label} [${phase}]`,
         exercises: pickExercises(template.groups, template.exerciseCount, parsed.goal).map(ex => ({
-          id: crypto.randomUUID(), name: ex.name,
-          sets: applyOverload(ex.sets, weekNumber, parsed.weeks),
-          reps: ex.reps, restSecs: ex.restSecs, notes: undefined,
+          id: crypto.randomUUID(),
+          name: ex.name,
+          sets: gymSets(ex.sets, weekNumber, totalWeeks),
+          reps: gymReps(ex.reps, weekNumber, parsed.goal),
+          restSecs: gymRest(ex.restSecs, weekNumber, parsed.goal),
+          notes: undefined,
         })),
       })),
     }

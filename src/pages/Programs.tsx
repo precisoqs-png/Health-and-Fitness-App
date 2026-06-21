@@ -163,8 +163,11 @@ export default function Programs() {
   const [aiLoading, setAiLoading] = useState(false)
   const [aiError, setAiError] = useState('')
   const [thinking, setThinking] = useState(false)
+  const [thinkingMsg, setThinkingMsg] = useState(0)
   const [followUpQs, setFollowUpQs] = useState<FollowUpQuestion[]>([])
   const [followUpAnswers, setFollowUpAnswers] = useState<Record<string, string>>({})
+
+  const THINKING_MSGS = ['Analysing your goal…', 'Applying exercise science principles…', 'Building your personalised plan…']
 
   // Diary date state
   const [diaryDate, setDiaryDate] = useState<string>(() => {
@@ -228,15 +231,23 @@ export default function Programs() {
     setFollowUpQs([])
     setFollowUpAnswers({})
     setThinking(true)
+    setThinkingMsg(0)
+    let idx = 0
+    const msgInterval = setInterval(() => {
+      idx = (idx + 1) % THINKING_MSGS.length
+      setThinkingMsg(idx)
+    }, 800)
     setTimeout(() => {
+      clearInterval(msgInterval)
       setThinking(false)
+      setThinkingMsg(0)
       const qs = needsFollowUp(aiPrompt)
       if (qs.length > 0) {
         setFollowUpQs(qs)
       } else {
         doGenerate(aiPrompt)
       }
-    }, 800)
+    }, 2400)
   }
 
   function handleSubmitFollowUp() {
@@ -541,9 +552,9 @@ export default function Programs() {
             {aiError && <p style={{ fontSize: 13, color: '#ef4444', marginBottom: 10 }}>{aiError}</p>}
 
             {thinking && (
-              <div style={{ display: 'flex', alignItems: 'center', gap: 10, padding: '10px 0', color: 'var(--text-muted)', fontSize: 14 }}>
-                <span style={{ display: 'inline-block', width: 14, height: 14, border: '2px solid var(--accent)', borderTopColor: 'transparent', borderRadius: '50%', animation: 'spin 0.7s linear infinite' }} />
-                Thinking…
+              <div style={{ background: 'var(--bg)', border: '1px solid var(--border)', borderRadius: 10, padding: '14px 16px', marginBottom: 10, display: 'flex', alignItems: 'center', gap: 12 }}>
+                <span style={{ display: 'inline-block', width: 16, height: 16, border: '2px solid var(--accent)', borderTopColor: 'transparent', borderRadius: '50%', animation: 'spin 0.7s linear infinite', flexShrink: 0 }} />
+                <span style={{ fontSize: 14, color: 'var(--accent)', fontWeight: 500, transition: 'opacity 0.3s' }}>{THINKING_MSGS[thinkingMsg]}</span>
               </div>
             )}
 
