@@ -137,6 +137,7 @@ interface AppState {
   addCustomFood: (f: Omit<FoodItem, 'id' | 'isCustom'>) => void
   deleteCustomFood: (id: string) => void
   addProgram: (p: Omit<TrainingProgram, 'id' | 'createdAt'>) => void
+  updateProgram: (id: string, p: TrainingProgram) => void
   deleteProgram: (id: string) => void
   setActiveProgram: (id: string | null) => void
   logDiaryEntry: (entry: Omit<DiaryEntry, 'id'>) => void
@@ -317,6 +318,10 @@ export function AppProvider({ children }: { children: ReactNode }) {
     if (!activeProgramId) setActiveProgramId(newP.id)
   }
 
+  function updateProgram(id: string, p: TrainingProgram) {
+    setPrograms(prev => prev.map(prog => prog.id === id ? p : prog))
+  }
+
   function deleteProgram(id: string) {
     setPrograms(prev => prev.filter(p => p.id !== id))
     if (activeProgramId === id) setActiveProgramId(null)
@@ -343,7 +348,7 @@ export function AppProvider({ children }: { children: ReactNode }) {
       updateGoalProgress, addGoal, deleteGoal, updateProfile,
       addWater, setSteps, addWeight,
       addCustomFood, deleteCustomFood,
-      addProgram, deleteProgram, setActiveProgram,
+      addProgram, updateProgram, deleteProgram, setActiveProgram,
       logDiaryEntry, deleteDiaryEntry,
     }}>
       {children}
