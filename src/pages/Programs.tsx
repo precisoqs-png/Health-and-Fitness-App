@@ -4,6 +4,7 @@ import type { ProgramExercise, ProgramDay, ProgramWeek, DiarySet } from '../cont
 import { useMobile } from '../hooks/useMobile'
 import { useToast } from '../context/ToastContext'
 import Card from '../components/Card'
+import { generateProgram } from '../lib/programGenerator'
 
 type Tab = 'program' | 'build' | 'history'
 
@@ -26,44 +27,24 @@ export default function Programs() {
   const [aiLoading, setAiLoading] = useState(false)
   const [aiError, setAiError] = useState('')
 
-  async function generateProgram() {
+  function handleGenerateProgram() {
     if (!aiPrompt.trim()) { showToast('Describe the program you want', 'error'); return }
     setAiLoading(true)
     setAiError('')
-    try {
-      const res = await fetch('/api/generate-program', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ prompt: aiPrompt }),
-      })
-      const data = await res.json()
-      if (!res.ok) throw new Error(data.error || 'Failed to generate program')
-
-      // Assign client-side IDs
-      const weeks: ProgramWeek[] = (data.weeks as ProgramWeek[]).map((w) => ({
-        weekNumber: w.weekNumber,
-        days: w.days.map((d) => ({
-          id: crypto.randomUUID(),
-          label: d.label,
-          exercises: d.exercises.map((ex) => ({
-            id: crypto.randomUUID(),
-            name: ex.name,
-            sets: ex.sets,
-            reps: ex.reps,
-            restSecs: ex.restSecs,
-          })),
-        })),
-      }))
-
-      addProgram({ name: data.name, weeks })
-      showToast('Program generated ✓')
-      setAiPrompt('')
-      setTab('program')
-    } catch (err) {
-      setAiError(err instanceof Error ? err.message : 'Something went wrong')
-    } finally {
-      setAiLoading(false)
-    }
+    // Brief timeout so the loading state renders before synchronous work
+    setTimeout(() => {
+      try {
+        const result = generateProgram(aiPrompt)
+        addProgram({ name: result.name, weeks: result.weeks })
+        showToast('Program generated ✓')
+        setAiPrompt('')
+        setTab('program')
+      } catch (err) {
+        setAiError(err instanceof Error ? err.message : 'Something went wrong')
+      } finally {
+        setAiLoading(false)
+      }
+    }, 80)
   }
 
   // Build program state
@@ -328,7 +309,7 @@ export default function Programs() {
             </p>
             {aiError && <p style={{ fontSize: 13, color: '#ef4444', marginBottom: 10 }}>{aiError}</p>}
             <button
-              onClick={generateProgram}
+              onClick={handleGenerateProgram}
               disabled={aiLoading}
               style={{ background: aiLoading ? '#1e3a8a88' : '#1e3a8a', color: '#93c5fd', border: '1px solid var(--accent)', borderRadius: 8, padding: '10px 20px', fontSize: 14, fontWeight: 600, cursor: aiLoading ? 'not-allowed' : 'pointer', display: 'flex', alignItems: 'center', gap: 8 }}>
               {aiLoading ? <><span style={{ display: 'inline-block', width: 14, height: 14, border: '2px solid #93c5fd', borderTopColor: 'transparent', borderRadius: '50%', animation: 'spin 0.7s linear infinite' }} />Generating…</> : '✨ Generate Program'}
