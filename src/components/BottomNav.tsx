@@ -1,8 +1,9 @@
 import { NavLink } from 'react-router-dom'
 
 const navItems = [
-  { to: '/dashboard', label: 'Dashboard', icon: '📊' },
-  { to: '/workouts', label: 'Workouts', icon: '💪' },
+  { to: '/dashboard', label: 'Home', icon: '📊' },
+  { to: '/workouts', label: 'Cardio', icon: '🏃' },
+  { to: '/programs', label: 'Training', icon: '🏋️' },
   { to: '/nutrition', label: 'Nutrition', icon: '🥗' },
   { to: '/progress', label: 'Progress', icon: '📈' },
   { to: '/settings', label: 'Settings', icon: '⚙️' },
@@ -33,7 +34,7 @@ export default function BottomNav() {
             justifyContent: 'center',
             padding: '10px 4px',
             textDecoration: 'none',
-            color: isActive ? '#f97316' : '#475569',
+            color: isActive ? '#3b82f6' : '#475569',
             fontSize: 10,
             fontWeight: 500,
             gap: 4,

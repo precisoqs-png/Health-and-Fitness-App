@@ -4,6 +4,8 @@ import { useAuth } from '../context/AuthContext'
 import { useToast } from '../context/ToastContext'
 import { useMobile } from '../hooks/useMobile'
 import Card from '../components/Card'
+import { calcBMR, calcTDEE, calcCalorieTarget, calcMacros } from '../lib/bmr'
+import type { ActivityLevel, GoalType, Gender } from '../lib/bmr'
 
 export default function Settings() {
   const { profile, updateProfile } = useApp()
@@ -12,20 +14,35 @@ export default function Settings() {
   const isMobile = useMobile()
   const [form, setForm] = useState({ ...profile })
 
+  const bmr = Math.round(calcBMR(form.currentWeight, form.height, form.age, form.gender as Gender))
+  const tdee = calcTDEE(bmr, form.activityLevel as ActivityLevel)
+  const targetCals = calcCalorieTarget(tdee, form.goalType as GoalType)
+  const macros = calcMacros(targetCals, form.currentWeight)
+
   async function handleSubmit(e: React.FormEvent) {
     e.preventDefault()
     await updateProfile(form)
     showToast('Settings saved ✓')
   }
 
+  function applyCalculator() {
+    setForm(f => ({
+      ...f,
+      dailyCalorieGoal: targetCals,
+      proteinGoal: macros.protein,
+      carbsGoal: macros.carbs,
+      fatGoal: macros.fat,
+    }))
+    showToast('Goals updated from calculator ✓')
+  }
+
   return (
     <div style={{ maxWidth: 700, margin: '0 auto', padding: isMobile ? '24px 16px' : '40px 24px' }}>
       <div style={{ marginBottom: 28 }}>
         <h1 style={{ fontSize: isMobile ? 22 : 28, fontWeight: 700, letterSpacing: '-0.5px', marginBottom: 4 }}>Settings</h1>
-        <p style={{ color: '#64748b', fontSize: 14 }}>Customize your profile and daily goals</p>
+        <p style={{ color: '#64748b', fontSize: 14 }}>Customize your profile, goals and body stats</p>
       </div>
 
-      {/* Account info */}
       <Card style={{ marginBottom: 20 }}>
         <h2 style={sectionHeadStyle}>Account</h2>
         <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
@@ -49,6 +66,96 @@ export default function Settings() {
         </Card>
 
         <Card>
+          <h2 style={sectionHeadStyle}>Body Stats & BMR Calculator</h2>
+          <div style={{ display: 'flex', flexDirection: 'column', gap: 14 }}>
+            <div style={{ display: 'grid', gridTemplateColumns: isMobile ? '1fr 1fr' : '1fr 1fr 1fr', gap: 12 }}>
+              <label style={labelStyle}>
+                <span style={labelTextStyle}>Age</span>
+                <input type="number" min={10} max={100} value={form.age} onChange={e => setForm(f => ({ ...f, age: Number(e.target.value) }))} style={inputStyle} />
+              </label>
+              <label style={labelStyle}>
+                <span style={labelTextStyle}>Height (cm)</span>
+                <input type="number" min={100} max={250} value={form.height} onChange={e => setForm(f => ({ ...f, height: Number(e.target.value) }))} style={inputStyle} />
+              </label>
+              <label style={labelStyle}>
+                <span style={labelTextStyle}>Current Weight (kg)</span>
+                <input type="number" min={30} max={300} step={0.1} value={form.currentWeight} onChange={e => setForm(f => ({ ...f, currentWeight: Number(e.target.value) }))} style={inputStyle} />
+              </label>
+            </div>
+
+            <label style={labelStyle}>
+              <span style={labelTextStyle}>Gender</span>
+              <div style={{ display: 'flex', gap: 10 }}>
+                {(['male', 'female'] as const).map(g => (
+                  <button key={g} type="button" onClick={() => setForm(f => ({ ...f, gender: g }))}
+                    style={{ flex: 1, padding: '9px 0', borderRadius: 8, border: '1px solid ' + (form.gender === g ? '#3b82f6' : '#2a2a3e'), background: form.gender === g ? '#1e3a8a22' : 'transparent', color: form.gender === g ? '#3b82f6' : '#64748b', fontWeight: 600, fontSize: 14, cursor: 'pointer' }}>
+                    {g.charAt(0).toUpperCase() + g.slice(1)}
+                  </button>
+                ))}
+              </div>
+            </label>
+
+            <label style={labelStyle}>
+              <span style={labelTextStyle}>Activity Level</span>
+              <select value={form.activityLevel} onChange={e => setForm(f => ({ ...f, activityLevel: e.target.value as ActivityLevel }))} style={{ ...inputStyle, cursor: 'pointer' }}>
+                <option value="sedentary">Sedentary (desk job, no exercise)</option>
+                <option value="light">Light (1-3 days/week exercise)</option>
+                <option value="moderate">Moderate (3-5 days/week exercise)</option>
+                <option value="active">Active (6-7 days/week exercise)</option>
+                <option value="very_active">Very Active (athlete / physical job)</option>
+              </select>
+            </label>
+
+            <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 12 }}>
+              <label style={labelStyle}>
+                <span style={labelTextStyle}>Goal</span>
+                <select value={form.goalType} onChange={e => setForm(f => ({ ...f, goalType: e.target.value as GoalType }))} style={{ ...inputStyle, cursor: 'pointer' }}>
+                  <option value="lose">Lose Weight (-500 kcal)</option>
+                  <option value="maintain">Maintain Weight</option>
+                  <option value="gain">Gain Muscle (+300 kcal)</option>
+                </select>
+              </label>
+              <label style={labelStyle}>
+                <span style={labelTextStyle}>Goal Weight (kg)</span>
+                <input type="number" min={30} max={300} step={0.1} value={form.goalWeight} onChange={e => setForm(f => ({ ...f, goalWeight: Number(e.target.value) }))} style={inputStyle} />
+              </label>
+            </div>
+
+            <div style={{ background: '#0f0f1a', border: '1px solid #2a2a3e', borderRadius: 10, padding: '14px 16px', marginTop: 4 }}>
+              <div style={{ display: 'grid', gridTemplateColumns: 'repeat(3, 1fr)', gap: 12, marginBottom: 14 }}>
+                {[
+                  { label: 'BMR', value: bmr + ' kcal', sub: 'base metabolic rate' },
+                  { label: 'TDEE', value: tdee + ' kcal', sub: 'total daily expenditure' },
+                  { label: 'Target', value: targetCals + ' kcal', sub: 'daily calorie goal' },
+                ].map(({ label, value, sub }) => (
+                  <div key={label} style={{ textAlign: 'center' }}>
+                    <p style={{ fontSize: 11, color: '#64748b', marginBottom: 2 }}>{label}</p>
+                    <p style={{ fontSize: isMobile ? 15 : 20, fontWeight: 700, color: '#3b82f6' }}>{value}</p>
+                    <p style={{ fontSize: 10, color: '#475569' }}>{sub}</p>
+                  </div>
+                ))}
+              </div>
+              <div style={{ display: 'grid', gridTemplateColumns: 'repeat(3, 1fr)', gap: 8, marginBottom: 12 }}>
+                {[
+                  { label: 'Protein', value: macros.protein, color: '#22c55e' },
+                  { label: 'Carbs', value: macros.carbs, color: '#3b82f6' },
+                  { label: 'Fat', value: macros.fat, color: '#a855f7' },
+                ].map(({ label, value, color }) => (
+                  <div key={label} style={{ background: '#13131f', borderRadius: 8, padding: '8px 10px', textAlign: 'center' }}>
+                    <p style={{ fontSize: 11, color: '#64748b', marginBottom: 2 }}>{label}</p>
+                    <p style={{ fontSize: 18, fontWeight: 700, color }}>{value}g</p>
+                  </div>
+                ))}
+              </div>
+              <button type="button" onClick={applyCalculator}
+                style={{ width: '100%', background: '#1e3a8a', color: '#93c5fd', border: '1px solid #3b82f6', borderRadius: 8, padding: '9px 0', fontSize: 14, fontWeight: 600, cursor: 'pointer' }}>
+                Apply These Targets to My Goals
+              </button>
+            </div>
+          </div>
+        </Card>
+
+        <Card>
           <h2 style={sectionHeadStyle}>Daily Goals</h2>
           <div style={{ display: 'flex', flexDirection: 'column', gap: 14 }}>
             {[
@@ -62,7 +169,7 @@ export default function Settings() {
               <label key={key} style={labelStyle}>
                 <div style={{ display: 'flex', justifyContent: 'space-between' }}>
                   <span style={labelTextStyle}>{label}</span>
-                  <span style={{ fontSize: 13, color: '#f97316', fontWeight: 600 }}>{form[key as keyof typeof form]} {unit}</span>
+                  <span style={{ fontSize: 13, color: '#3b82f6', fontWeight: 600 }}>{form[key as keyof typeof form]} {unit}</span>
                 </div>
                 <input
                   type="range"
@@ -71,7 +178,7 @@ export default function Settings() {
                   step={step}
                   value={form[key as keyof typeof form] as number}
                   onChange={e => setForm(f => ({ ...f, [key]: Number(e.target.value) }))}
-                  style={{ width: '100%', accentColor: '#f97316', cursor: 'pointer' }}
+                  style={{ width: '100%', accentColor: '#3b82f6', cursor: 'pointer' }}
                 />
                 <div style={{ display: 'flex', justifyContent: 'space-between', marginTop: 2 }}>
                   <span style={{ fontSize: 11, color: '#334155' }}>{min} {unit}</span>
@@ -84,7 +191,7 @@ export default function Settings() {
 
         <button
           type="submit"
-          style={{ background: '#f97316', color: '#fff', border: 'none', borderRadius: 10, padding: '13px 32px', fontSize: 15, fontWeight: 600, cursor: 'pointer', alignSelf: 'flex-start' }}
+          style={{ background: '#3b82f6', color: '#fff', border: 'none', borderRadius: 10, padding: '13px 32px', fontSize: 15, fontWeight: 600, cursor: 'pointer', alignSelf: 'flex-start' }}
         >
           Save Changes
         </button>

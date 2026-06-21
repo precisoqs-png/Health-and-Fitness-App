@@ -2,6 +2,8 @@ import { createContext, useContext, useState, useEffect, useCallback } from 'rea
 import type { ReactNode } from 'react'
 import { supabase } from '../lib/supabase'
 import { useAuth } from './AuthContext'
+import type { FoodItem } from '../data/foods'
+export type { FoodItem }
 
 export interface Workout {
   id: string
@@ -41,6 +43,14 @@ export interface Profile {
   proteinGoal: number
   carbsGoal: number
   fatGoal: number
+  // Body stats for BMR calculator
+  height: number       // cm
+  age: number
+  gender: 'male' | 'female'
+  activityLevel: 'sedentary' | 'light' | 'moderate' | 'active' | 'very_active'
+  goalType: 'lose' | 'maintain' | 'gain'
+  goalWeight: number   // kg
+  currentWeight: number // kg
 }
 
 export interface DailyLog {
@@ -55,6 +65,52 @@ export interface WeightEntry {
   weight: number
 }
 
+export interface ProgramExercise {
+  id: string
+  name: string
+  sets: number
+  reps: string      // e.g. "8-10"
+  restSecs: number
+  notes?: string
+}
+
+export interface ProgramDay {
+  id: string
+  label: string
+  exercises: ProgramExercise[]
+}
+
+export interface ProgramWeek {
+  weekNumber: number
+  days: ProgramDay[]
+}
+
+export interface TrainingProgram {
+  id: string
+  name: string
+  weeks: ProgramWeek[]
+  createdAt: string
+}
+
+export interface DiarySet {
+  exerciseId: string
+  exerciseName: string
+  setNumber: number
+  repsCompleted: number
+  weightKg: number
+  notes?: string
+}
+
+export interface DiaryEntry {
+  id: string
+  programId: string
+  weekNumber: number
+  dayId: string
+  dayLabel: string
+  date: string
+  sets: DiarySet[]
+}
+
 interface AppState {
   profile: Profile
   workouts: Workout[]
@@ -63,6 +119,10 @@ interface AppState {
   dailyLog: DailyLog
   weightLog: WeightEntry[]
   isNewUser: boolean
+  customFoods: FoodItem[]
+  programs: TrainingProgram[]
+  diary: DiaryEntry[]
+  activeProgramId: string | null
   addWorkout: (w: Omit<Workout, 'id'>) => Promise<void>
   deleteWorkout: (id: string) => Promise<void>
   addMeal: (m: Omit<Meal, 'id'>) => Promise<void>
@@ -74,6 +134,13 @@ interface AppState {
   addWater: (amount: number) => void
   setSteps: (steps: number) => void
   addWeight: (weight: number) => void
+  addCustomFood: (f: Omit<FoodItem, 'id' | 'isCustom'>) => void
+  deleteCustomFood: (id: string) => void
+  addProgram: (p: Omit<TrainingProgram, 'id' | 'createdAt'>) => void
+  deleteProgram: (id: string) => void
+  setActiveProgram: (id: string | null) => void
+  logDiaryEntry: (entry: Omit<DiaryEntry, 'id'>) => void
+  deleteDiaryEntry: (id: string) => void
 }
 
 const defaultProfile: Profile = {
@@ -84,10 +151,17 @@ const defaultProfile: Profile = {
   proteinGoal: 160,
   carbsGoal: 220,
   fatGoal: 65,
+  height: 175,
+  age: 30,
+  gender: 'male',
+  activityLevel: 'moderate',
+  goalType: 'maintain',
+  goalWeight: 80,
+  currentWeight: 80,
 }
 
 const defaultGoals: Goal[] = [
-  { label: 'Lose 5kg', progress: 3.2, total: 5, unit: 'kg', icon: '⚖️', color: '#f97316' },
+  { label: 'Lose 5kg', progress: 3.2, total: 5, unit: 'kg', icon: '⚖️', color: '#3b82f6' },
   { label: 'Run 100km this month', progress: 68, total: 100, unit: 'km', icon: '🏃', color: '#22c55e' },
   { label: 'Workout 20 days', progress: 14, total: 20, unit: 'days', icon: '💪', color: '#a855f7' },
   { label: 'Hit protein goal 30 days', progress: 22, total: 30, unit: 'days', icon: '🥩', color: '#ef4444' },
@@ -132,6 +206,10 @@ export function AppProvider({ children }: { children: ReactNode }) {
   const [meals, setMeals] = useState<Meal[]>(() => load('vf_meals', []))
   const [goals, setGoals] = useState<Goal[]>(() => load('vf_goals', defaultGoals))
   const [weightLog, setWeightLog] = useState<WeightEntry[]>(() => load('vf_weights', []))
+  const [customFoods, setCustomFoods] = useState<FoodItem[]>(() => load('vf_custom_foods', []))
+  const [programs, setPrograms] = useState<TrainingProgram[]>(() => load('vf_programs', []))
+  const [diary, setDiary] = useState<DiaryEntry[]>(() => load('vf_diary', []))
+  const [activeProgramId, setActiveProgramId] = useState<string | null>(() => load('vf_active_program', null))
   const [dailyLog, setDailyLog] = useState<DailyLog>(() => {
     const saved = load<DailyLog>('vf_daily', { date: todayISO(), steps: 0, water: 0 })
     return saved.date === todayISO() ? saved : { date: todayISO(), steps: 0, water: 0 }
@@ -146,6 +224,10 @@ export function AppProvider({ children }: { children: ReactNode }) {
   useEffect(() => { save('vf_goals', goals) }, [goals])
   useEffect(() => { save('vf_daily', dailyLog) }, [dailyLog])
   useEffect(() => { save('vf_weights', weightLog) }, [weightLog])
+  useEffect(() => { save('vf_custom_foods', customFoods) }, [customFoods])
+  useEffect(() => { save('vf_programs', programs) }, [programs])
+  useEffect(() => { save('vf_diary', diary) }, [diary])
+  useEffect(() => { save('vf_active_program', activeProgramId) }, [activeProgramId])
 
   const loadFromSupabase = useCallback(async (uid: string) => {
     const [{ data: wData }, { data: mData }, { data: gData }, { data: pData }] = await Promise.all([
@@ -217,11 +299,53 @@ export function AppProvider({ children }: { children: ReactNode }) {
 
   function addWeight(weight: number) {
     const entry: WeightEntry = { id: crypto.randomUUID(), date: new Date().toISOString(), weight }
-    setWeightLog(prev => [entry, ...prev].slice(0, 90)) // keep 90 entries max
+    setWeightLog(prev => [entry, ...prev].slice(0, 90))
+  }
+
+  function addCustomFood(f: Omit<FoodItem, 'id' | 'isCustom'>) {
+    const newF: FoodItem = { ...f, id: crypto.randomUUID(), isCustom: true }
+    setCustomFoods(prev => [...prev, newF])
+  }
+
+  function deleteCustomFood(id: string) {
+    setCustomFoods(prev => prev.filter(f => f.id !== id))
+  }
+
+  function addProgram(p: Omit<TrainingProgram, 'id' | 'createdAt'>) {
+    const newP: TrainingProgram = { ...p, id: crypto.randomUUID(), createdAt: new Date().toISOString() }
+    setPrograms(prev => [...prev, newP])
+    if (!activeProgramId) setActiveProgramId(newP.id)
+  }
+
+  function deleteProgram(id: string) {
+    setPrograms(prev => prev.filter(p => p.id !== id))
+    if (activeProgramId === id) setActiveProgramId(null)
+  }
+
+  function setActiveProgram(id: string | null) {
+    setActiveProgramId(id)
+  }
+
+  function logDiaryEntry(entry: Omit<DiaryEntry, 'id'>) {
+    const newEntry: DiaryEntry = { ...entry, id: crypto.randomUUID() }
+    setDiary(prev => [newEntry, ...prev])
+  }
+
+  function deleteDiaryEntry(id: string) {
+    setDiary(prev => prev.filter(e => e.id !== id))
   }
 
   return (
-    <AppContext.Provider value={{ profile, workouts, meals, goals, dailyLog, weightLog, isNewUser, addWorkout, deleteWorkout, addMeal, deleteMeal, updateGoalProgress, addGoal, deleteGoal, updateProfile, addWater, setSteps, addWeight }}>
+    <AppContext.Provider value={{
+      profile, workouts, meals, goals, dailyLog, weightLog, isNewUser,
+      customFoods, programs, diary, activeProgramId,
+      addWorkout, deleteWorkout, addMeal, deleteMeal,
+      updateGoalProgress, addGoal, deleteGoal, updateProfile,
+      addWater, setSteps, addWeight,
+      addCustomFood, deleteCustomFood,
+      addProgram, deleteProgram, setActiveProgram,
+      logDiaryEntry, deleteDiaryEntry,
+    }}>
       {children}
     </AppContext.Provider>
   )

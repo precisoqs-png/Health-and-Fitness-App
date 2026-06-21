@@ -10,6 +10,7 @@ import Workouts from './pages/Workouts'
 import Nutrition from './pages/Nutrition'
 import Progress from './pages/Progress'
 import Settings from './pages/Settings'
+import Programs from './pages/Programs'
 
 export default function App() {
   const { user, loading } = useAuth()
@@ -36,6 +37,7 @@ export default function App() {
           <Route path="/nutrition" element={<Nutrition />} />
           <Route path="/progress" element={<Progress />} />
           <Route path="/settings" element={<Settings />} />
+          <Route path="/programs" element={<Programs />} />
         </Routes>
       </div>
       {isMobile && <BottomNav />}

@@ -22,7 +22,7 @@ export default function Dashboard() {
   const streak = calcStreak(workouts)
 
   const stats = [
-    { label: 'Steps Today', value: dailyLog.steps.toLocaleString(), goal: profile.dailyStepGoal.toLocaleString(), icon: '👟', pct: Math.min(100, Math.round(dailyLog.steps / profile.dailyStepGoal * 100)), color: '#f97316' },
+    { label: 'Steps Today', value: dailyLog.steps.toLocaleString(), goal: profile.dailyStepGoal.toLocaleString(), icon: '👟', pct: Math.min(100, Math.round(dailyLog.steps / profile.dailyStepGoal * 100)), color: '#3b82f6' },
     { label: 'Calories Burned', value: caloriesBurned.toString(), goal: '700 kcal', icon: '🔥', pct: Math.min(100, Math.round(caloriesBurned / 700 * 100)), color: '#ef4444' },
     { label: 'Active Minutes', value: activeMinutes.toString(), goal: '60 min', icon: '⏱️', pct: Math.min(100, Math.round(activeMinutes / 60 * 100)), color: '#22c55e' },
     { label: 'Water Intake', value: `${dailyLog.water.toFixed(1)} L`, goal: `${profile.waterGoal} L`, icon: '💧', pct: Math.min(100, Math.round(dailyLog.water / profile.waterGoal * 100)), color: '#3b82f6' },
@@ -75,13 +75,13 @@ export default function Dashboard() {
           <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: isMobile ? 'flex-start' : 'center', gap: 16, flexDirection: isMobile ? 'column' : 'row' }}>
             <div>
               <p style={{ fontSize: 22, marginBottom: 6 }}>👋</p>
-              <h2 style={{ fontWeight: 700, fontSize: isMobile ? 17 : 20, marginBottom: 6, color: '#f97316' }}>Welcome to Velocity Fitness!</h2>
+              <h2 style={{ fontWeight: 700, fontSize: isMobile ? 17 : 20, marginBottom: 6, color: '#3b82f6' }}>Welcome to Velocity Fitness!</h2>
               <p style={{ color: '#94a3b8', fontSize: 14, lineHeight: 1.6 }}>
                 Start by setting your name and daily goals, then log your first workout or meal.
               </p>
             </div>
             <div style={{ display: 'flex', gap: 10, flexShrink: 0 }}>
-              <Link to="/settings" style={{ background: '#f97316', color: '#fff', padding: '10px 20px', borderRadius: 8, fontWeight: 600, fontSize: 14, textDecoration: 'none', whiteSpace: 'nowrap' }}>
+              <Link to="/settings" style={{ background: '#3b82f6', color: '#fff', padding: '10px 20px', borderRadius: 8, fontWeight: 600, fontSize: 14, textDecoration: 'none', whiteSpace: 'nowrap' }}>
                 Set up profile →
               </Link>
             </div>
@@ -95,7 +95,7 @@ export default function Dashboard() {
           Good morning, {profile.name}! 👋
         </h1>
         {streak > 0 && (
-          <p style={{ marginTop: 6, fontSize: 14, color: '#f97316' }}>🔥 {streak}-day streak — keep it going!</p>
+          <p style={{ marginTop: 6, fontSize: 14, color: '#3b82f6' }}>🔥 {streak}-day streak — keep it going!</p>
         )}
       </div>
 
@@ -109,7 +109,7 @@ export default function Dashboard() {
         <div style={{ display: 'grid', gridTemplateColumns: 'repeat(3, 1fr)', gap: 10, textAlign: 'center' }}>
           {[
             { label: 'Goal', value: profile.dailyCalorieGoal, color: '#94a3b8' },
-            { label: 'Consumed', value: calConsumed, color: '#f97316' },
+            { label: 'Consumed', value: calConsumed, color: '#3b82f6' },
             { label: 'Remaining', value: calRemaining, color: calRemaining >= 0 ? '#22c55e' : '#ef4444' },
           ].map(({ label, value, color }) => (
             <div key={label} style={{ background: '#0f0f1a', borderRadius: 10, padding: isMobile ? '12px 6px' : '14px 8px' }}>
@@ -144,16 +144,16 @@ export default function Dashboard() {
           {editingSteps ? (
             <form onSubmit={handleStepsSave} style={{ display: 'flex', gap: 8 }}>
               <input type="number" min="0" max="99999" autoFocus value={stepsInput} onChange={e => setStepsInput(e.target.value)} placeholder="e.g. 7500" style={{ flex: 1, background: '#0f0f1a', border: '1px solid #2a2a3e', borderRadius: 8, padding: '9px 12px', color: '#e2e8f0', fontSize: 14, outline: 'none' }} />
-              <button type="submit" style={{ background: '#f97316', color: '#fff', border: 'none', borderRadius: 8, padding: '9px 16px', fontWeight: 600, cursor: 'pointer', fontSize: 13 }}>Save</button>
+              <button type="submit" style={{ background: '#3b82f6', color: '#fff', border: 'none', borderRadius: 8, padding: '9px 16px', fontWeight: 600, cursor: 'pointer', fontSize: 13 }}>Save</button>
               <button type="button" onClick={() => setEditingSteps(false)} style={{ background: 'transparent', border: '1px solid #2a2a3e', borderRadius: 8, padding: '9px 12px', color: '#64748b', cursor: 'pointer', fontSize: 13 }}>✕</button>
             </form>
           ) : (
             <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
               <div>
-                <p style={{ fontSize: 28, fontWeight: 700, color: '#f97316' }}>{dailyLog.steps.toLocaleString()}</p>
+                <p style={{ fontSize: 28, fontWeight: 700, color: '#3b82f6' }}>{dailyLog.steps.toLocaleString()}</p>
                 <p style={{ fontSize: 13, color: '#64748b' }}>of {profile.dailyStepGoal.toLocaleString()} goal</p>
               </div>
-              <button onClick={() => { setStepsInput(dailyLog.steps.toString()); setEditingSteps(true) }} style={{ background: 'rgba(249,115,22,0.1)', border: '1px solid rgba(249,115,22,0.3)', borderRadius: 8, padding: '8px 16px', color: '#f97316', fontSize: 13, fontWeight: 600, cursor: 'pointer' }}>
+              <button onClick={() => { setStepsInput(dailyLog.steps.toString()); setEditingSteps(true) }} style={{ background: 'rgba(249,115,22,0.1)', border: '1px solid rgba(249,115,22,0.3)', borderRadius: 8, padding: '8px 16px', color: '#3b82f6', fontSize: 13, fontWeight: 600, cursor: 'pointer' }}>
                 Update
               </button>
             </div>
@@ -173,7 +173,7 @@ export default function Dashboard() {
                 </div>
                 <div style={{ display: 'flex', gap: 12 }}>
                   {duration > 0 && <span style={{ color: '#64748b', fontSize: 13 }}>{duration}m</span>}
-                  {calories > 0 && <span style={{ color: '#f97316', fontSize: 13, fontWeight: 500 }}>{calories} kcal</span>}
+                  {calories > 0 && <span style={{ color: '#3b82f6', fontSize: 13, fontWeight: 500 }}>{calories} kcal</span>}
                 </div>
               </div>
             ))}
@@ -193,7 +193,7 @@ export default function Dashboard() {
                 <span>{icon}</span>
                 <span style={{ color: '#94a3b8', fontSize: 13 }}>{label}</span>
               </div>
-              <span style={{ fontWeight: 600, color: '#f97316', fontSize: 14 }}>{value}</span>
+              <span style={{ fontWeight: 600, color: '#3b82f6', fontSize: 14 }}>{value}</span>
             </div>
           ))}
         </Card>

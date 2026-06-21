@@ -5,7 +5,7 @@ import { useMobile } from '../hooks/useMobile'
 import Card from '../components/Card'
 
 const workoutTypes = [
-  { id: 'running', name: 'Running', icon: '🏃', desc: 'Outdoor or treadmill runs', color: '#f97316', calsPerMin: 10 },
+  { id: 'running', name: 'Running', icon: '🏃', desc: 'Outdoor or treadmill runs', color: '#3b82f6', calsPerMin: 10 },
   { id: 'cycling', name: 'Cycling', icon: '🚴', desc: 'Road, trail, or stationary', color: '#3b82f6', calsPerMin: 8 },
   { id: 'strength', name: 'Strength', icon: '🏋️', desc: 'Weights and resistance training', color: '#a855f7', calsPerMin: 6 },
   { id: 'yoga', name: 'Yoga', icon: '🧘', desc: 'Flexibility and mindfulness', color: '#22c55e', calsPerMin: 4 },
@@ -79,7 +79,7 @@ export default function Workouts() {
           <p style={{ color: '#64748b', fontSize: 14 }}>Select a type and start the timer, or log a past workout</p>
         </div>
         {streak > 0 && (
-          <div style={{ background: 'rgba(249,115,22,0.1)', border: '1px solid rgba(249,115,22,0.3)', borderRadius: 10, padding: '6px 14px', fontSize: 13, color: '#f97316', whiteSpace: 'nowrap' }}>
+          <div style={{ background: 'rgba(249,115,22,0.1)', border: '1px solid rgba(249,115,22,0.3)', borderRadius: 10, padding: '6px 14px', fontSize: 13, color: '#3b82f6', whiteSpace: 'nowrap' }}>
             🔥 {streak}-day streak
           </div>
         )}
@@ -129,7 +129,7 @@ export default function Workouts() {
             {running ? 'Session in progress' : `Ready to start ${workoutTypes.find(w => w.id === selected)?.name}?`}
           </h2>
           {running && (
-            <p style={{ fontSize: 56, fontWeight: 800, color: '#f97316', letterSpacing: 3, margin: '16px 0', fontVariantNumeric: 'tabular-nums' }}>
+            <p style={{ fontSize: 56, fontWeight: 800, color: '#3b82f6', letterSpacing: 3, margin: '16px 0', fontVariantNumeric: 'tabular-nums' }}>
               {fmt(elapsed)}
             </p>
           )}
@@ -138,7 +138,7 @@ export default function Workouts() {
           </p>
           <div style={{ display: 'flex', gap: 12, justifyContent: 'center' }}>
             {!running ? (
-              <button onClick={startSession} style={{ background: '#f97316', color: '#fff', border: 'none', borderRadius: 10, padding: '13px 36px', fontSize: 16, fontWeight: 600, cursor: 'pointer' }}>
+              <button onClick={startSession} style={{ background: '#3b82f6', color: '#fff', border: 'none', borderRadius: 10, padding: '13px 36px', fontSize: 16, fontWeight: 600, cursor: 'pointer' }}>
                 Start Workout ⚡
               </button>
             ) : (
@@ -181,7 +181,7 @@ export default function Workouts() {
               <input type="number" min="1" placeholder={`Auto: ~${Number(manual.duration || 30) * (workoutTypes.find(w => w.id === manual.type)?.calsPerMin ?? 8)} kcal`} value={manual.calories} onChange={e => setManual(m => ({ ...m, calories: e.target.value }))} style={{ ...inputStyle, maxWidth: 200 }} />
             </label>
             <div style={{ display: 'flex', gap: 10, marginTop: 4 }}>
-              <button type="submit" style={{ background: '#f97316', color: '#fff', border: 'none', borderRadius: 8, padding: '10px 24px', fontWeight: 600, cursor: 'pointer', fontSize: 14 }}>Save Workout</button>
+              <button type="submit" style={{ background: '#3b82f6', color: '#fff', border: 'none', borderRadius: 8, padding: '10px 24px', fontWeight: 600, cursor: 'pointer', fontSize: 14 }}>Save Workout</button>
               <button type="button" onClick={() => setShowManual(false)} style={{ background: 'transparent', color: '#64748b', border: '1px solid #2a2a3e', borderRadius: 8, padding: '10px 16px', cursor: 'pointer', fontSize: 14 }}>Cancel</button>
             </div>
           </form>
@@ -242,7 +242,7 @@ function WorkoutRow({ workout: w, showDate, onDelete }: { workout: Workout; show
       </div>
       <div style={{ display: 'flex', gap: 12, alignItems: 'center' }}>
         <span style={{ color: '#64748b', fontSize: 13 }}>{w.duration} min</span>
-        <span style={{ color: '#f97316', fontSize: 13, fontWeight: 500 }}>{w.calories} kcal</span>
+        <span style={{ color: '#3b82f6', fontSize: 13, fontWeight: 500 }}>{w.calories} kcal</span>
         {confirming ? (
           <>
             <button onClick={onDelete} style={{ background: '#ef4444', color: '#fff', border: 'none', borderRadius: 6, padding: '4px 10px', fontSize: 12, cursor: 'pointer' }}>Delete</button>

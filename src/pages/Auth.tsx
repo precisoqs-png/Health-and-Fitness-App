@@ -31,7 +31,7 @@ export default function Auth() {
       <div style={{ width: '100%', maxWidth: 400 }}>
         <div style={{ textAlign: 'center', marginBottom: 40 }}>
           <span style={{ fontSize: 40 }}>⚡</span>
-          <h1 style={{ fontSize: 28, fontWeight: 800, color: '#f97316', letterSpacing: '-1px', marginTop: 8 }}>Velocity Fitness</h1>
+          <h1 style={{ fontSize: 28, fontWeight: 800, color: '#3b82f6', letterSpacing: '-1px', marginTop: 8 }}>Velocity Fitness</h1>
           <p style={{ color: '#64748b', marginTop: 6 }}>Track. Train. Transform.</p>
         </div>
 
@@ -49,7 +49,7 @@ export default function Auth() {
                   cursor: 'pointer',
                   fontWeight: 600,
                   fontSize: 14,
-                  background: mode === m ? '#f97316' : 'transparent',
+                  background: mode === m ? '#3b82f6' : 'transparent',
                   color: mode === m ? '#fff' : '#64748b',
                   transition: 'all 0.15s',
                 }}
@@ -85,7 +85,7 @@ export default function Auth() {
               type="submit"
               disabled={loading}
               style={{
-                background: loading ? '#7c3614' : '#f97316',
+                background: loading ? '#1e3a8a' : '#3b82f6',
                 color: '#fff',
                 border: 'none',
                 borderRadius: 10,

@@ -4,7 +4,8 @@ import { useMobile } from '../hooks/useMobile'
 
 const navItems = [
   { to: '/dashboard', label: 'Dashboard', icon: '📊' },
-  { to: '/workouts', label: 'Workouts', icon: '💪' },
+  { to: '/workouts', label: 'Cardio', icon: '🏃' },
+  { to: '/programs', label: 'Training', icon: '🏋️' },
   { to: '/nutrition', label: 'Nutrition', icon: '🥗' },
   { to: '/progress', label: 'Progress', icon: '📈' },
   { to: '/settings', label: 'Settings', icon: '⚙️' },
@@ -19,7 +20,7 @@ export default function Navbar() {
       <div style={{ maxWidth: 1200, margin: '0 auto', padding: '0 24px', display: 'flex', alignItems: 'center', justifyContent: 'space-between', height: isMobile ? 56 : 64 }}>
         <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
           <span style={{ fontSize: isMobile ? 20 : 24 }}>⚡</span>
-          <span style={{ fontWeight: 700, fontSize: isMobile ? 17 : 20, color: '#f97316', letterSpacing: '-0.5px' }}>Velocity Fitness</span>
+          <span style={{ fontWeight: 700, fontSize: isMobile ? 17 : 20, color: '#3b82f6', letterSpacing: '-0.5px' }}>Velocity Fitness</span>
         </div>
         {!isMobile && (
           <div style={{ display: 'flex', alignItems: 'center', gap: 4 }}>
@@ -36,8 +37,8 @@ export default function Navbar() {
                   fontSize: 14,
                   fontWeight: 500,
                   textDecoration: 'none',
-                  color: isActive ? '#f97316' : '#94a3b8',
-                  background: isActive ? 'rgba(249,115,22,0.1)' : 'transparent',
+                  color: isActive ? '#3b82f6' : '#94a3b8',
+                  background: isActive ? 'rgba(59,130,246,0.1)' : 'transparent',
                   transition: 'all 0.15s',
                 })}
               >
