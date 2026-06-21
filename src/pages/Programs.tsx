@@ -21,6 +21,51 @@ export default function Programs() {
   const isMobile = useMobile()
   const [tab, setTab] = useState<Tab>('program')
 
+  // AI builder state
+  const [aiPrompt, setAiPrompt] = useState('')
+  const [aiLoading, setAiLoading] = useState(false)
+  const [aiError, setAiError] = useState('')
+
+  async function generateProgram() {
+    if (!aiPrompt.trim()) { showToast('Describe the program you want', 'error'); return }
+    setAiLoading(true)
+    setAiError('')
+    try {
+      const res = await fetch('/api/generate-program', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ prompt: aiPrompt }),
+      })
+      const data = await res.json()
+      if (!res.ok) throw new Error(data.error || 'Failed to generate program')
+
+      // Assign client-side IDs
+      const weeks: ProgramWeek[] = (data.weeks as ProgramWeek[]).map((w) => ({
+        weekNumber: w.weekNumber,
+        days: w.days.map((d) => ({
+          id: crypto.randomUUID(),
+          label: d.label,
+          exercises: d.exercises.map((ex) => ({
+            id: crypto.randomUUID(),
+            name: ex.name,
+            sets: ex.sets,
+            reps: ex.reps,
+            restSecs: ex.restSecs,
+          })),
+        })),
+      }))
+
+      addProgram({ name: data.name, weeks })
+      showToast('Program generated ✓')
+      setAiPrompt('')
+      setTab('program')
+    } catch (err) {
+      setAiError(err instanceof Error ? err.message : 'Something went wrong')
+    } finally {
+      setAiLoading(false)
+    }
+  }
+
   // Build program state
   const [buildName, setBuildName] = useState('')
   const [buildWeeks, setBuildWeeks] = useState(12)
@@ -268,6 +313,34 @@ export default function Programs() {
       {/* BUILD PROGRAM TAB */}
       {tab === 'build' && (
         <div style={{ display: 'flex', flexDirection: 'column', gap: 16 }}>
+          {/* AI Program Builder */}
+          <Card>
+            <h2 style={{ ...sectionHead, marginBottom: 12 }}>✨ AI Program Builder</h2>
+            <textarea
+              value={aiPrompt}
+              onChange={e => setAiPrompt(e.target.value)}
+              placeholder="Describe the program you want, e.g. '12-week program to grow lats and chest with 3 gym days per week, intermediate level'"
+              rows={4}
+              style={{ ...inputStyle, resize: 'vertical', fontFamily: 'inherit', lineHeight: 1.5 }}
+            />
+            <p style={{ fontSize: 12, color: 'var(--text-subtle)', fontStyle: 'italic', margin: '8px 0 12px' }}>
+              AI-generated programs are suggestions only. Always consult a qualified fitness professional before starting a new training program, and use your own judgement — AI can make mistakes.
+            </p>
+            {aiError && <p style={{ fontSize: 13, color: '#ef4444', marginBottom: 10 }}>{aiError}</p>}
+            <button
+              onClick={generateProgram}
+              disabled={aiLoading}
+              style={{ background: aiLoading ? '#1e3a8a88' : '#1e3a8a', color: '#93c5fd', border: '1px solid var(--accent)', borderRadius: 8, padding: '10px 20px', fontSize: 14, fontWeight: 600, cursor: aiLoading ? 'not-allowed' : 'pointer', display: 'flex', alignItems: 'center', gap: 8 }}>
+              {aiLoading ? <><span style={{ display: 'inline-block', width: 14, height: 14, border: '2px solid #93c5fd', borderTopColor: 'transparent', borderRadius: '50%', animation: 'spin 0.7s linear infinite' }} />Generating…</> : '✨ Generate Program'}
+            </button>
+          </Card>
+
+          <div style={{ display: 'flex', alignItems: 'center', gap: 12, color: 'var(--text-subtle)', fontSize: 13 }}>
+            <div style={{ flex: 1, height: 1, background: 'var(--border)' }} />
+            <span>or build manually below</span>
+            <div style={{ flex: 1, height: 1, background: 'var(--border)' }} />
+          </div>
+
           <Card>
             <h2 style={sectionHead}>Program Details</h2>
             <div style={{ display: 'grid', gridTemplateColumns: isMobile ? '1fr' : '2fr 1fr', gap: 12 }}>
