@@ -128,6 +128,7 @@ interface AppState {
   deleteWorkout: (id: string) => Promise<void>
   addMeal: (m: Omit<Meal, 'id'>) => Promise<void>
   deleteMeal: (id: string) => Promise<void>
+  updateMeal: (id: string, m: Omit<Meal, 'id'>) => Promise<void>
   updateGoalProgress: (label: string, progress: number) => Promise<void>
   addGoal: (g: Goal) => Promise<void>
   deleteGoal: (label: string) => Promise<void>
@@ -272,6 +273,12 @@ export function AppProvider({ children }: { children: ReactNode }) {
     if (user) await supabase.from('meals').delete().eq('id', id).eq('user_id', user.id)
   }
 
+  async function updateMeal(id: string, m: Omit<Meal, 'id'>) {
+    const updated: Meal = { ...m, id }
+    setMeals(prev => prev.map(meal => meal.id === id ? updated : meal))
+    if (user) await supabase.from('meals').update({ ...updated, items: JSON.stringify(updated.items) }).eq('id', id).eq('user_id', user.id)
+  }
+
   async function updateGoalProgress(label: string, progress: number) {
     setGoals(prev => prev.map(g => g.label === label ? { ...g, progress } : g))
     if (user) await supabase.from('goals').upsert({ user_id: user.id, label, progress }, { onConflict: 'user_id,label' })
@@ -358,7 +365,7 @@ export function AppProvider({ children }: { children: ReactNode }) {
     <AppContext.Provider value={{
       profile, workouts, meals, goals, dailyLog, weightLog, isNewUser,
       customFoods, programs, diary, activeProgramId,
-      addWorkout, deleteWorkout, addMeal, deleteMeal,
+      addWorkout, deleteWorkout, addMeal, deleteMeal, updateMeal,
       updateGoalProgress, addGoal, deleteGoal, updateProfile,
       addWater, setSteps, addWeight,
       addCustomFood, deleteCustomFood, copyMealsForDay,

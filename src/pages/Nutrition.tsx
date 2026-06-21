@@ -7,18 +7,19 @@ import Card from '../components/Card'
 import ProgressBar from '../components/ProgressBar'
 import { BUILT_IN_FOODS } from '../data/foods'
 
-type Tab = 'log' | 'database' | 'myfoods'
+type Tab = 'log' | 'history' | 'database' | 'myfoods'
 
 const emptyMealForm = { name: '', time: '' }
 const emptyCustomFood = { name: '', calories: '', protein: '', carbs: '', fat: '', servingSize: '100', category: 'Other' }
 
 export default function Nutrition() {
-  const { meals, addMeal, deleteMeal, profile, dailyLog, addWater, customFoods, addCustomFood, deleteCustomFood, copyMealsForDay } = useApp()
+  const { meals, addMeal, deleteMeal, updateMeal, profile, dailyLog, addWater, customFoods, addCustomFood, deleteCustomFood, copyMealsForDay } = useApp()
   const { showToast } = useToast()
   const isMobile = useMobile()
   const [tab, setTab] = useState<Tab>('log')
   const [showCopyDay, setShowCopyDay] = useState(false)
   const [copyDayTarget, setCopyDayTarget] = useState('')
+  const [editingMealId, setEditingMealId] = useState<string | null>(null)
   const [showForm, setShowForm] = useState(false)
   const [mealForm, setMealForm] = useState(emptyMealForm)
   const [selectedItems, setSelectedItems] = useState<Array<{ food: FoodItem; grams: number; mode: 'g' | 'srv'; serves: number }>>([])
@@ -65,7 +66,7 @@ export default function Nutrition() {
     e.preventDefault()
     if (!mealForm.name) { showToast('Meal name is required', 'error'); return }
     if (selectedItems.length === 0 && itemCalories === 0) { showToast('Add at least one food item', 'error'); return }
-    addMeal({
+    const mealData = {
       name: mealForm.name,
       time: mealForm.time || new Date().toLocaleTimeString('en-US', { hour: 'numeric', minute: '2-digit' }),
       items: selectedItems.map(item => `${item.food.name} (${effG(item)}g)`),
@@ -74,11 +75,19 @@ export default function Nutrition() {
       carbs: itemCarbs,
       fat: itemFat,
       date: new Date().toISOString(),
-    })
+    }
+    if (editingMealId) {
+      const existing = meals.find(m => m.id === editingMealId)
+      updateMeal(editingMealId, { ...mealData, date: existing?.date ?? mealData.date })
+      showToast('Meal updated ✓')
+      setEditingMealId(null)
+    } else {
+      addMeal(mealData)
+      showToast('Meal logged ✓')
+    }
     setMealForm(emptyMealForm)
     setSelectedItems([])
     setShowForm(false)
-    showToast('Meal logged ✓')
   }
 
   function handleAddCustomFood(e: React.FormEvent) {
@@ -166,10 +175,10 @@ export default function Nutrition() {
       </div>
 
       {/* Tabs */}
-      <div style={{ display: 'flex', background: 'var(--card)', borderRadius: 10, padding: 4, marginBottom: 20, border: '1px solid #2a2a3e' }}>
-        {([['log', "Today's Log"], ['database', 'Food Database'], ['myfoods', 'My Foods']] as const).map(([key, label]) => (
+      <div style={{ display: 'flex', background: 'var(--card)', borderRadius: 10, padding: 4, marginBottom: 20, border: '1px solid #2a2a3e', overflowX: 'auto' }}>
+        {([['log', "Today's Log"], ['history', 'History'], ['database', 'Food DB'], ['myfoods', 'My Foods']] as const).map(([key, label]) => (
           <button key={key} onClick={() => setTab(key)}
-            style={{ flex: 1, padding: '8px 0', borderRadius: 8, border: 'none', cursor: 'pointer', fontWeight: 600, fontSize: isMobile ? 12 : 14, background: tab === key ? 'var(--accent)' : 'transparent', color: tab === key ? '#fff' : 'var(--text-muted)', transition: 'all 0.15s' }}>
+            style={{ flex: 1, padding: '8px 6px', borderRadius: 8, border: 'none', cursor: 'pointer', fontWeight: 600, fontSize: isMobile ? 11 : 13, background: tab === key ? 'var(--accent)' : 'transparent', color: tab === key ? '#fff' : 'var(--text-muted)', transition: 'all 0.15s', whiteSpace: 'nowrap' }}>
             {label}
           </button>
         ))}
@@ -178,6 +187,12 @@ export default function Nutrition() {
       {/* TODAY'S LOG TAB */}
       {tab === 'log' && (
         <>
+          <div style={{ marginBottom: 16, padding: '10px 14px', background: 'var(--card)', border: '1px solid var(--border)', borderRadius: 10, display: 'flex', alignItems: 'center', gap: 8 }}>
+            <span style={{ fontSize: 16 }}>📅</span>
+            <span style={{ fontSize: 14, fontWeight: 600, color: 'var(--text)' }}>
+              Today — {new Date().toLocaleDateString('en-AU', { weekday: 'long', day: 'numeric', month: 'long', year: 'numeric' })}
+            </span>
+          </div>
           {isMobile && <div style={{ display: 'flex', flexDirection: 'column', gap: 16, marginBottom: 20 }}>{summaryCard}{waterCard}</div>}
           <div style={{ display: 'grid', gridTemplateColumns: isMobile ? '1fr' : '2fr 1fr', gap: 20 }}>
             <div style={{ display: 'flex', flexDirection: 'column', gap: 14 }}>
@@ -189,12 +204,19 @@ export default function Nutrition() {
                 </div>
               )}
               {todayMeals.map(meal => (
-                <MealCard key={meal.id} meal={meal} onDelete={() => { deleteMeal(meal.id); showToast('Meal deleted', 'info') }} />
+                <MealCard key={meal.id} meal={meal}
+                  onDelete={() => { deleteMeal(meal.id); showToast('Meal deleted', 'info') }}
+                  onEdit={() => {
+                    setEditingMealId(meal.id)
+                    setMealForm({ name: meal.name, time: meal.time })
+                    setSelectedItems([])
+                    setShowForm(true)
+                  }} />
               ))}
 
               {showForm ? (
                 <Card>
-                  <h3 style={{ fontWeight: 600, fontSize: 15, marginBottom: 14 }}>Log a Meal</h3>
+                  <h3 style={{ fontWeight: 600, fontSize: 15, marginBottom: 14 }}>{editingMealId ? '✏️ Edit Meal' : 'Log a Meal'}</h3>
                   <form onSubmit={handleLogMeal} style={{ display: 'flex', flexDirection: 'column', gap: 12 }}>
                     <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 10 }}>
                       <input placeholder="Meal name *" value={mealForm.name} onChange={e => setMealForm(f => ({ ...f, name: e.target.value }))} style={inputStyle} />
@@ -268,7 +290,7 @@ export default function Nutrition() {
 
                     <div style={{ display: 'flex', gap: 10, marginTop: 4 }}>
                       <button type="submit" style={{ background: 'var(--accent)', color: '#fff', border: 'none', borderRadius: 8, padding: '10px 22px', fontWeight: 600, cursor: 'pointer', fontSize: 14 }}>Save Meal</button>
-                      <button type="button" onClick={() => { setShowForm(false); setSelectedItems([]); setFoodSearch('') }}
+                      <button type="button" onClick={() => { setShowForm(false); setSelectedItems([]); setFoodSearch(''); setEditingMealId(null); setMealForm(emptyMealForm) }}
                         style={{ background: 'transparent', color: 'var(--text-muted)', border: '1px solid #2a2a3e', borderRadius: 8, padding: '10px 16px', cursor: 'pointer', fontSize: 14 }}>Cancel</button>
                     </div>
                   </form>
@@ -329,6 +351,35 @@ export default function Nutrition() {
           )}
         </>
       )}
+
+      {/* HISTORY TAB */}
+      {tab === 'history' && (() => {
+        const pastDates = Array.from({ length: 30 }, (_, i) => {
+          const d = new Date(); d.setDate(d.getDate() - i - 1)
+          return d.toISOString().slice(0, 10)
+        }).filter(date => meals.some(m => m.date?.slice(0, 10) === date))
+        return (
+          <div style={{ display: 'flex', flexDirection: 'column', gap: 12 }}>
+            {pastDates.length === 0 && (
+              <div style={{ textAlign: 'center', padding: '50px 20px', background: 'var(--card)', border: '1px solid var(--border)', borderRadius: 16 }}>
+                <p style={{ fontSize: 36, marginBottom: 10 }}>📆</p>
+                <p style={{ fontSize: 15, fontWeight: 500, color: 'var(--text-muted)' }}>No past days recorded yet</p>
+                <p style={{ fontSize: 13, color: 'var(--text-subtle)', marginTop: 6 }}>Start logging meals today and they'll appear here.</p>
+              </div>
+            )}
+            {pastDates.map(date => {
+              const dayMeals = meals.filter(m => m.date?.slice(0, 10) === date)
+              const dayCals = dayMeals.reduce((s, m) => s + m.calories, 0)
+              const dayP = dayMeals.reduce((s, m) => s + m.protein, 0)
+              const dayC = dayMeals.reduce((s, m) => s + m.carbs, 0)
+              const dayF = dayMeals.reduce((s, m) => s + m.fat, 0)
+              return (
+                <HistoryDay key={date} date={date} meals={dayMeals} calories={dayCals} protein={dayP} carbs={dayC} fat={dayF} calorieGoal={profile.dailyCalorieGoal} />
+              )
+            })}
+          </div>
+        )
+      })()}
 
       {/* FOOD DATABASE TAB */}
       {tab === 'database' && (
@@ -446,7 +497,9 @@ export default function Nutrition() {
   )
 }
 
-function MealCard({ meal, onDelete }: { meal: { id: string; name: string; time: string; items: string[]; calories: number; protein: number; carbs: number; fat: number }; onDelete: () => void }) {
+type MealShape = { id: string; name: string; time: string; items: string[]; calories: number; protein: number; carbs: number; fat: number }
+
+function MealCard({ meal, onDelete, onEdit }: { meal: MealShape; onDelete: () => void; onEdit?: () => void }) {
   const [confirming, setConfirming] = useState(false)
   return (
     <Card>
@@ -455,25 +508,28 @@ function MealCard({ meal, onDelete }: { meal: { id: string; name: string; time: 
           <p style={{ fontSize: 12, color: 'var(--text-subtle)', marginBottom: 2 }}>{meal.time}</p>
           <h3 style={{ fontWeight: 600, fontSize: 16 }}>{meal.name}</h3>
         </div>
-        <div style={{ display: 'flex', alignItems: 'flex-start', gap: 12 }}>
+        <div style={{ display: 'flex', alignItems: 'flex-start', gap: 8 }}>
           <div style={{ textAlign: 'right' }}>
             <p style={{ fontSize: 20, fontWeight: 700, color: 'var(--accent)' }}>{meal.calories}</p>
             <p style={{ fontSize: 12, color: 'var(--text-muted)' }}>kcal</p>
           </div>
+          {onEdit && (
+            <button onClick={onEdit} style={{ background: 'transparent', border: 'none', color: 'var(--text-muted)', fontSize: 16, cursor: 'pointer', padding: '2px 4px', lineHeight: 1 }} title="Edit meal">✏️</button>
+          )}
           {confirming ? (
             <div style={{ display: 'flex', gap: 6 }}>
               <button onClick={onDelete} style={{ background: '#ef4444', color: '#fff', border: 'none', borderRadius: 6, padding: '4px 10px', fontSize: 12, cursor: 'pointer' }}>Delete</button>
-              <button onClick={() => setConfirming(false)} style={{ background: 'transparent', border: '1px solid #2a2a3e', borderRadius: 6, padding: '4px 8px', fontSize: 12, color: 'var(--text-muted)', cursor: 'pointer' }}>x</button>
+              <button onClick={() => setConfirming(false)} style={{ background: 'transparent', border: '1px solid #2a2a3e', borderRadius: 6, padding: '4px 8px', fontSize: 12, color: 'var(--text-muted)', cursor: 'pointer' }}>×</button>
             </div>
           ) : (
-            <button onClick={() => setConfirming(true)} style={{ background: 'transparent', border: 'none', color: '#334155', fontSize: 18, cursor: 'pointer', padding: '0 4px', lineHeight: 1 }}>...</button>
+            <button onClick={() => setConfirming(true)} style={{ background: 'transparent', border: 'none', color: '#334155', fontSize: 18, cursor: 'pointer', padding: '0 4px', lineHeight: 1 }}>···</button>
           )}
         </div>
       </div>
       {meal.items.length > 0 && (
         <div style={{ marginBottom: 10 }}>
           {meal.items.map(item => (
-            <p key={item} style={{ fontSize: 13, color: '#94a3b8', lineHeight: 1.8 }}>* {item}</p>
+            <p key={item} style={{ fontSize: 13, color: '#94a3b8', lineHeight: 1.8 }}>· {item}</p>
           ))}
         </div>
       )}
@@ -482,6 +538,50 @@ function MealCard({ meal, onDelete }: { meal: { id: string; name: string; time: 
         <span style={{ fontSize: 13, color: 'var(--accent)' }}>C: {meal.carbs}g</span>
         <span style={{ fontSize: 13, color: '#a855f7' }}>F: {meal.fat}g</span>
       </div>
+    </Card>
+  )
+}
+
+function HistoryDay({ date, meals, calories, protein, carbs, fat, calorieGoal }: { date: string; meals: MealShape[]; calories: number; protein: number; carbs: number; fat: number; calorieGoal: number }) {
+  const [expanded, setExpanded] = useState(false)
+  const dayName = new Date(date + 'T12:00:00').toLocaleDateString('en-AU', { weekday: 'long', day: 'numeric', month: 'short' })
+  return (
+    <Card>
+      <button onClick={() => setExpanded(e => !e)} style={{ width: '100%', background: 'none', border: 'none', padding: 0, cursor: 'pointer', textAlign: 'left' }}>
+        <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+          <div>
+            <p style={{ fontWeight: 600, fontSize: 15, color: 'var(--text)' }}>{dayName}</p>
+            <div style={{ display: 'flex', gap: 12, marginTop: 4 }}>
+              <span style={{ fontSize: 12, color: '#22c55e' }}>P: {protein}g</span>
+              <span style={{ fontSize: 12, color: 'var(--accent)' }}>C: {carbs}g</span>
+              <span style={{ fontSize: 12, color: '#a855f7' }}>F: {fat}g</span>
+            </div>
+          </div>
+          <div style={{ display: 'flex', alignItems: 'center', gap: 12 }}>
+            <div style={{ textAlign: 'right' }}>
+              <p style={{ fontSize: 20, fontWeight: 700, color: calories > calorieGoal ? '#ef4444' : 'var(--accent)' }}>{calories}</p>
+              <p style={{ fontSize: 11, color: 'var(--text-muted)' }}>kcal</p>
+            </div>
+            <span style={{ color: 'var(--text-muted)', fontSize: 18 }}>{expanded ? '▾' : '▸'}</span>
+          </div>
+        </div>
+      </button>
+      {expanded && (
+        <div style={{ marginTop: 12, display: 'flex', flexDirection: 'column', gap: 8, paddingTop: 12, borderTop: '1px solid var(--border)' }}>
+          {meals.map(m => (
+            <div key={m.id} style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', padding: '8px 10px', background: 'var(--bg)', borderRadius: 8 }}>
+              <div>
+                <p style={{ fontSize: 14, fontWeight: 500, color: 'var(--text)' }}>{m.name}</p>
+                <p style={{ fontSize: 12, color: 'var(--text-muted)' }}>{m.time}</p>
+              </div>
+              <div style={{ textAlign: 'right' }}>
+                <p style={{ fontSize: 14, fontWeight: 600, color: 'var(--accent)' }}>{m.calories} kcal</p>
+                <p style={{ fontSize: 11, color: 'var(--text-subtle)' }}>P:{m.protein}g C:{m.carbs}g F:{m.fat}g</p>
+              </div>
+            </div>
+          ))}
+        </div>
+      )}
     </Card>
   )
 }
