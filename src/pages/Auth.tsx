@@ -27,16 +27,16 @@ export default function Auth() {
   }
 
   return (
-    <div style={{ minHeight: '100vh', background: '#0f0f1a', display: 'flex', alignItems: 'center', justifyContent: 'center', padding: 24 }}>
+    <div style={{ minHeight: '100vh', background: 'var(--bg)', display: 'flex', alignItems: 'center', justifyContent: 'center', padding: 24 }}>
       <div style={{ width: '100%', maxWidth: 400 }}>
         <div style={{ textAlign: 'center', marginBottom: 40 }}>
           <span style={{ fontSize: 40 }}>⚡</span>
-          <h1 style={{ fontSize: 28, fontWeight: 800, color: '#3b82f6', letterSpacing: '-1px', marginTop: 8 }}>Velocity Fitness</h1>
-          <p style={{ color: '#64748b', marginTop: 6 }}>Track. Train. Transform.</p>
+          <h1 style={{ fontSize: 28, fontWeight: 800, color: 'var(--accent)', letterSpacing: '-1px', marginTop: 8 }}>Velocity Fitness</h1>
+          <p style={{ color: 'var(--text-muted)', marginTop: 6 }}>Track. Train. Transform.</p>
         </div>
 
-        <div style={{ background: '#13131f', border: '1px solid #2a2a3e', borderRadius: 16, padding: 32 }}>
-          <div style={{ display: 'flex', marginBottom: 28, background: '#0f0f1a', borderRadius: 10, padding: 4 }}>
+        <div style={{ background: 'var(--card)', border: '1px solid #2a2a3e', borderRadius: 16, padding: 32 }}>
+          <div style={{ display: 'flex', marginBottom: 28, background: 'var(--bg)', borderRadius: 10, padding: 4 }}>
             {(['login', 'signup'] as const).map(m => (
               <button
                 key={m}
@@ -49,8 +49,8 @@ export default function Auth() {
                   cursor: 'pointer',
                   fontWeight: 600,
                   fontSize: 14,
-                  background: mode === m ? '#3b82f6' : 'transparent',
-                  color: mode === m ? '#fff' : '#64748b',
+                  background: mode === m ? 'var(--accent)' : 'transparent',
+                  color: mode === m ? '#fff' : 'var(--text-muted)',
                   transition: 'all 0.15s',
                 }}
               >
@@ -85,7 +85,7 @@ export default function Auth() {
               type="submit"
               disabled={loading}
               style={{
-                background: loading ? '#1e3a8a' : '#3b82f6',
+                background: loading ? '#1e3a8a' : 'var(--accent)',
                 color: '#fff',
                 border: 'none',
                 borderRadius: 10,
@@ -107,11 +107,11 @@ export default function Auth() {
 }
 
 const inputStyle: React.CSSProperties = {
-  background: '#0f0f1a',
+  background: 'var(--bg)',
   border: '1px solid #2a2a3e',
   borderRadius: 8,
   padding: '12px 14px',
-  color: '#e2e8f0',
+  color: 'var(--text)',
   fontSize: 15,
   outline: 'none',
   width: '100%',

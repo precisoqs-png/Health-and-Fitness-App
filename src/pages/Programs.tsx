@@ -122,14 +122,14 @@ export default function Programs() {
     <div style={{ maxWidth: 900, margin: '0 auto', padding: isMobile ? '24px 16px' : '40px 24px' }}>
       <div style={{ marginBottom: 20 }}>
         <h1 style={{ fontSize: isMobile ? 22 : 28, fontWeight: 700, letterSpacing: '-0.5px', marginBottom: 4 }}>Training Programs</h1>
-        <p style={{ color: '#64748b', fontSize: 14 }}>Plan workouts, track sets, weights and progress</p>
+        <p style={{ color: 'var(--text-muted)', fontSize: 14 }}>Plan workouts, track sets, weights and progress</p>
       </div>
 
       {/* Tabs */}
-      <div style={{ display: 'flex', background: '#13131f', borderRadius: 10, padding: 4, marginBottom: 20, border: '1px solid #2a2a3e' }}>
+      <div style={{ display: 'flex', background: 'var(--card)', borderRadius: 10, padding: 4, marginBottom: 20, border: '1px solid #2a2a3e' }}>
         {([['program', 'My Program'], ['build', 'Build Program'], ['history', 'Diary']] as const).map(([key, label]) => (
           <button key={key} onClick={() => setTab(key)}
-            style={{ flex: 1, padding: '8px 0', borderRadius: 8, border: 'none', cursor: 'pointer', fontWeight: 600, fontSize: isMobile ? 12 : 14, background: tab === key ? '#3b82f6' : 'transparent', color: tab === key ? '#fff' : '#64748b', transition: 'all 0.15s' }}>
+            style={{ flex: 1, padding: '8px 0', borderRadius: 8, border: 'none', cursor: 'pointer', fontWeight: 600, fontSize: isMobile ? 12 : 14, background: tab === key ? 'var(--accent)' : 'transparent', color: tab === key ? '#fff' : 'var(--text-muted)', transition: 'all 0.15s' }}>
             {label}
           </button>
         ))}
@@ -139,11 +139,11 @@ export default function Programs() {
       {tab === 'program' && (
         <div style={{ display: 'flex', flexDirection: 'column', gap: 16 }}>
           {programs.length === 0 ? (
-            <div style={{ textAlign: 'center', padding: '50px 20px', background: '#13131f', border: '1px solid #2a2a3e', borderRadius: 16 }}>
+            <div style={{ textAlign: 'center', padding: '50px 20px', background: 'var(--card)', border: '1px solid #2a2a3e', borderRadius: 16 }}>
               <p style={{ fontSize: 40, marginBottom: 12 }}>🏋️</p>
               <p style={{ fontSize: 16, fontWeight: 600, color: '#94a3b8', marginBottom: 8 }}>No programs yet</p>
-              <p style={{ fontSize: 14, color: '#475569', marginBottom: 20 }}>Build your first training program to get started.</p>
-              <button onClick={() => setTab('build')} style={{ background: '#3b82f6', color: '#fff', border: 'none', borderRadius: 8, padding: '10px 24px', fontWeight: 600, cursor: 'pointer' }}>
+              <p style={{ fontSize: 14, color: 'var(--text-subtle)', marginBottom: 20 }}>Build your first training program to get started.</p>
+              <button onClick={() => setTab('build')} style={{ background: 'var(--accent)', color: '#fff', border: 'none', borderRadius: 8, padding: '10px 24px', fontWeight: 600, cursor: 'pointer' }}>
                 Build a Program
               </button>
             </div>
@@ -155,15 +155,15 @@ export default function Programs() {
                   <h2 style={sectionHead}>Active Program</h2>
                   <div style={{ display: 'flex', flexDirection: 'column', gap: 8 }}>
                     {programs.map(p => (
-                      <div key={p.id} style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', padding: '10px 12px', background: '#0f0f1a', borderRadius: 8, border: `1px solid ${p.id === activeProgramId ? '#3b82f6' : '#2a2a3e'}` }}>
+                      <div key={p.id} style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', padding: '10px 12px', background: 'var(--bg)', borderRadius: 8, border: `1px solid ${p.id === activeProgramId ? 'var(--accent)' : 'var(--border)'}` }}>
                         <div>
-                          <p style={{ fontWeight: 600, color: '#e2e8f0', fontSize: 14 }}>{p.name}</p>
-                          <p style={{ fontSize: 12, color: '#475569' }}>{p.weeks.length} weeks · {p.weeks[0]?.days.length || 0} days/week</p>
+                          <p style={{ fontWeight: 600, color: 'var(--text)', fontSize: 14 }}>{p.name}</p>
+                          <p style={{ fontSize: 12, color: 'var(--text-subtle)' }}>{p.weeks.length} weeks · {p.weeks[0]?.days.length || 0} days/week</p>
                         </div>
                         <div style={{ display: 'flex', gap: 8 }}>
-                          {p.id !== activeProgramId && <button onClick={() => setActiveProgram(p.id)} style={{ background: '#3b82f6', color: '#fff', border: 'none', borderRadius: 6, padding: '5px 12px', fontSize: 13, cursor: 'pointer', fontWeight: 600 }}>Select</button>}
-                          {p.id === activeProgramId && <span style={{ fontSize: 12, color: '#3b82f6', fontWeight: 600, padding: '5px 8px' }}>Active</span>}
-                          <button onClick={() => { deleteProgram(p.id); showToast('Program deleted', 'info') }} style={{ background: 'transparent', border: '1px solid #2a2a3e', borderRadius: 6, padding: '5px 10px', fontSize: 12, color: '#64748b', cursor: 'pointer' }}>Delete</button>
+                          {p.id !== activeProgramId && <button onClick={() => setActiveProgram(p.id)} style={{ background: 'var(--accent)', color: '#fff', border: 'none', borderRadius: 6, padding: '5px 12px', fontSize: 13, cursor: 'pointer', fontWeight: 600 }}>Select</button>}
+                          {p.id === activeProgramId && <span style={{ fontSize: 12, color: 'var(--accent)', fontWeight: 600, padding: '5px 8px' }}>Active</span>}
+                          <button onClick={() => { deleteProgram(p.id); showToast('Program deleted', 'info') }} style={{ background: 'transparent', border: '1px solid #2a2a3e', borderRadius: 6, padding: '5px 10px', fontSize: 12, color: 'var(--text-muted)', cursor: 'pointer' }}>Delete</button>
                         </div>
                       </div>
                     ))}
@@ -176,28 +176,28 @@ export default function Programs() {
                 <Card>
                   <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 16 }}>
                     <h2 style={{ fontWeight: 700, fontSize: 16 }}>{activeProgram.name}</h2>
-                    <span style={{ fontSize: 13, color: '#64748b' }}>{activeProgram.weeks.length} weeks</span>
+                    <span style={{ fontSize: 13, color: 'var(--text-muted)' }}>{activeProgram.weeks.length} weeks</span>
                   </div>
                   <div style={{ display: 'flex', flexDirection: 'column', gap: 6 }}>
                     {activeProgram.weeks.map(week => (
                       <div key={week.weekNumber}>
                         <button onClick={() => setExpandedWeek(expandedWeek === week.weekNumber ? null : week.weekNumber)}
-                          style={{ width: '100%', display: 'flex', justifyContent: 'space-between', alignItems: 'center', background: '#0f0f1a', border: '1px solid #2a2a3e', borderRadius: 8, padding: '10px 14px', cursor: 'pointer', color: '#e2e8f0', fontSize: 14, fontWeight: 600 }}>
+                          style={{ width: '100%', display: 'flex', justifyContent: 'space-between', alignItems: 'center', background: 'var(--bg)', border: '1px solid #2a2a3e', borderRadius: 8, padding: '10px 14px', cursor: 'pointer', color: 'var(--text)', fontSize: 14, fontWeight: 600 }}>
                           <span>Week {week.weekNumber}</span>
                           <div style={{ display: 'flex', gap: 8, alignItems: 'center' }}>
-                            <span style={{ fontSize: 12, color: '#64748b' }}>{week.days.length} days</span>
-                            <span style={{ color: '#475569', fontSize: 12 }}>{expandedWeek === week.weekNumber ? '▲' : '▼'}</span>
+                            <span style={{ fontSize: 12, color: 'var(--text-muted)' }}>{week.days.length} days</span>
+                            <span style={{ color: 'var(--text-subtle)', fontSize: 12 }}>{expandedWeek === week.weekNumber ? '▲' : '▼'}</span>
                           </div>
                         </button>
                         {expandedWeek === week.weekNumber && (
                           <div style={{ padding: '10px 0 4px 10px', display: 'flex', flexDirection: 'column', gap: 10 }}>
                             {week.days.map(day => (
-                              <div key={day.id} style={{ background: '#0f0f1a', border: '1px solid #1e1e2e', borderRadius: 8, padding: '12px 14px' }}>
+                              <div key={day.id} style={{ background: 'var(--bg)', border: '1px solid #1e1e2e', borderRadius: 8, padding: '12px 14px' }}>
                                 <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 10 }}>
-                                  <p style={{ fontWeight: 600, fontSize: 14, color: '#e2e8f0' }}>{day.label}</p>
+                                  <p style={{ fontWeight: 600, fontSize: 14, color: 'var(--text)' }}>{day.label}</p>
                                   {loggingDayId === day.id ? null : (
                                     <button onClick={() => startLogging(week.weekNumber, day)}
-                                      style={{ background: '#3b82f6', color: '#fff', border: 'none', borderRadius: 6, padding: '5px 12px', fontSize: 12, fontWeight: 600, cursor: 'pointer' }}>
+                                      style={{ background: 'var(--accent)', color: '#fff', border: 'none', borderRadius: 6, padding: '5px 12px', fontSize: 12, fontWeight: 600, cursor: 'pointer' }}>
                                       Log Session
                                     </button>
                                   )}
@@ -206,15 +206,15 @@ export default function Programs() {
                                 {/* Exercise table */}
                                 {day.exercises.length > 0 && (
                                   <div style={{ display: 'flex', flexDirection: 'column', gap: 4 }}>
-                                    <div style={{ display: 'grid', gridTemplateColumns: '2fr 60px 80px 70px', gap: 8, padding: '4px 8px', fontSize: 11, color: '#475569', fontWeight: 600, textTransform: 'uppercase', letterSpacing: 0.5 }}>
+                                    <div style={{ display: 'grid', gridTemplateColumns: '2fr 60px 80px 70px', gap: 8, padding: '4px 8px', fontSize: 11, color: 'var(--text-subtle)', fontWeight: 600, textTransform: 'uppercase', letterSpacing: 0.5 }}>
                                       <span>Exercise</span><span style={{ textAlign: 'center' }}>Sets</span><span style={{ textAlign: 'center' }}>Reps</span><span style={{ textAlign: 'center' }}>Rest</span>
                                     </div>
                                     {day.exercises.map(ex => (
-                                      <div key={ex.id} style={{ display: 'grid', gridTemplateColumns: '2fr 60px 80px 70px', gap: 8, padding: '8px', background: '#13131f', borderRadius: 6, fontSize: 14 }}>
-                                        <span style={{ color: '#e2e8f0' }}>{ex.name}</span>
-                                        <span style={{ color: '#3b82f6', textAlign: 'center', fontWeight: 600 }}>{ex.sets}</span>
+                                      <div key={ex.id} style={{ display: 'grid', gridTemplateColumns: '2fr 60px 80px 70px', gap: 8, padding: '8px', background: 'var(--card)', borderRadius: 6, fontSize: 14 }}>
+                                        <span style={{ color: 'var(--text)' }}>{ex.name}</span>
+                                        <span style={{ color: 'var(--accent)', textAlign: 'center', fontWeight: 600 }}>{ex.sets}</span>
                                         <span style={{ color: '#94a3b8', textAlign: 'center' }}>{ex.reps}</span>
-                                        <span style={{ color: '#475569', textAlign: 'center', fontSize: 12 }}>{ex.restSecs}s</span>
+                                        <span style={{ color: 'var(--text-subtle)', textAlign: 'center', fontSize: 12 }}>{ex.restSecs}s</span>
                                       </div>
                                     ))}
                                   </div>
@@ -223,18 +223,18 @@ export default function Programs() {
                                 {/* Inline logging */}
                                 {loggingDayId === day.id && (
                                   <div style={{ marginTop: 14, borderTop: '1px solid #2a2a3e', paddingTop: 14 }}>
-                                    <p style={{ fontSize: 13, color: '#3b82f6', fontWeight: 600, marginBottom: 10 }}>Logging Session — Week {loggingWeek}</p>
+                                    <p style={{ fontSize: 13, color: 'var(--accent)', fontWeight: 600, marginBottom: 10 }}>Logging Session — Week {loggingWeek}</p>
                                     {day.exercises.map(ex => (
                                       <div key={ex.id} style={{ marginBottom: 14 }}>
-                                        <p style={{ fontWeight: 600, fontSize: 14, color: '#e2e8f0', marginBottom: 8 }}>{ex.name}</p>
+                                        <p style={{ fontWeight: 600, fontSize: 14, color: 'var(--text)', marginBottom: 8 }}>{ex.name}</p>
                                         <div style={{ display: 'grid', gridTemplateColumns: '40px 1fr 1fr', gap: 6, marginBottom: 4 }}>
-                                          <span style={{ fontSize: 11, color: '#475569', textAlign: 'center' }}>Set</span>
-                                          <span style={{ fontSize: 11, color: '#475569', textAlign: 'center' }}>Reps</span>
-                                          <span style={{ fontSize: 11, color: '#475569', textAlign: 'center' }}>Weight (kg)</span>
+                                          <span style={{ fontSize: 11, color: 'var(--text-subtle)', textAlign: 'center' }}>Set</span>
+                                          <span style={{ fontSize: 11, color: 'var(--text-subtle)', textAlign: 'center' }}>Reps</span>
+                                          <span style={{ fontSize: 11, color: 'var(--text-subtle)', textAlign: 'center' }}>Weight (kg)</span>
                                         </div>
                                         {(logSets[ex.id] || []).map((set, si) => (
                                           <div key={si} style={{ display: 'grid', gridTemplateColumns: '40px 1fr 1fr', gap: 6, marginBottom: 6 }}>
-                                            <span style={{ fontSize: 14, color: '#64748b', textAlign: 'center', paddingTop: 10, fontWeight: 600 }}>{si + 1}</span>
+                                            <span style={{ fontSize: 14, color: 'var(--text-muted)', textAlign: 'center', paddingTop: 10, fontWeight: 600 }}>{si + 1}</span>
                                             <input type="number" min={0} value={set.reps || ''} placeholder="0"
                                               onChange={e => setLogSets(prev => ({ ...prev, [ex.id]: prev[ex.id].map((s, i) => i === si ? { ...s, reps: Number(e.target.value) } : s) }))}
                                               style={inputStyle} />
@@ -246,8 +246,8 @@ export default function Programs() {
                                       </div>
                                     ))}
                                     <div style={{ display: 'flex', gap: 10, marginTop: 8 }}>
-                                      <button onClick={() => handleSaveSession(day)} style={{ background: '#3b82f6', color: '#fff', border: 'none', borderRadius: 8, padding: '10px 20px', fontWeight: 600, cursor: 'pointer', fontSize: 14 }}>Save Session</button>
-                                      <button onClick={() => setLoggingDayId(null)} style={{ background: 'transparent', border: '1px solid #2a2a3e', borderRadius: 8, padding: '10px 14px', color: '#64748b', cursor: 'pointer', fontSize: 14 }}>Cancel</button>
+                                      <button onClick={() => handleSaveSession(day)} style={{ background: 'var(--accent)', color: '#fff', border: 'none', borderRadius: 8, padding: '10px 20px', fontWeight: 600, cursor: 'pointer', fontSize: 14 }}>Save Session</button>
+                                      <button onClick={() => setLoggingDayId(null)} style={{ background: 'transparent', border: '1px solid #2a2a3e', borderRadius: 8, padding: '10px 14px', color: 'var(--text-muted)', cursor: 'pointer', fontSize: 14 }}>Cancel</button>
                                     </div>
                                   </div>
                                 )}
@@ -280,7 +280,7 @@ export default function Programs() {
                 <input type="number" min={1} max={52} value={buildWeeks} onChange={e => setBuildWeeks(Number(e.target.value))} style={inputStyle} />
               </div>
             </div>
-            <p style={{ fontSize: 12, color: '#475569', marginTop: 10 }}>
+            <p style={{ fontSize: 12, color: 'var(--text-subtle)', marginTop: 10 }}>
               Define your training days below. The same day structure repeats across all {buildWeeks} weeks — you log actual weights when you do the session.
             </p>
           </Card>
@@ -291,13 +291,13 @@ export default function Programs() {
                 <input value={day.label} onChange={e => setDays(prev => prev.map(d => d.id === day.id ? { ...d, label: e.target.value } : d))}
                   style={{ ...inputStyle, fontSize: 15, fontWeight: 600, maxWidth: 160 }} />
                 {days.length > 1 && (
-                  <button onClick={() => removeDay(day.id)} style={{ background: 'transparent', border: '1px solid #2a2a3e', borderRadius: 6, padding: '5px 10px', color: '#64748b', fontSize: 13, cursor: 'pointer' }}>Remove Day</button>
+                  <button onClick={() => removeDay(day.id)} style={{ background: 'transparent', border: '1px solid #2a2a3e', borderRadius: 6, padding: '5px 10px', color: 'var(--text-muted)', fontSize: 13, cursor: 'pointer' }}>Remove Day</button>
                 )}
               </div>
 
               {day.exercises.length > 0 && (
                 <div style={{ display: 'flex', flexDirection: 'column', gap: 8, marginBottom: 12 }}>
-                  <div style={{ display: 'grid', gridTemplateColumns: '2fr 60px 80px 70px 30px', gap: 8, padding: '0 4px', fontSize: 11, color: '#475569', fontWeight: 600, textTransform: 'uppercase', letterSpacing: 0.5 }}>
+                  <div style={{ display: 'grid', gridTemplateColumns: '2fr 60px 80px 70px 30px', gap: 8, padding: '0 4px', fontSize: 11, color: 'var(--text-subtle)', fontWeight: 600, textTransform: 'uppercase', letterSpacing: 0.5 }}>
                     <span>Exercise</span><span style={{ textAlign: 'center' }}>Sets</span><span style={{ textAlign: 'center' }}>Reps</span><span style={{ textAlign: 'center' }}>Rest(s)</span><span />
                   </div>
                   {day.exercises.map(ex => (
@@ -312,25 +312,25 @@ export default function Programs() {
                       <input type="number" min={1} max={20} value={ex.sets} onChange={e => updateExercise(day.id, ex.id, 'sets', Number(e.target.value))} style={{ ...inputStyle, textAlign: 'center', padding: '10px 4px' }} />
                       <input value={ex.reps} onChange={e => updateExercise(day.id, ex.id, 'reps', e.target.value)} placeholder="8-10" style={{ ...inputStyle, textAlign: 'center' }} />
                       <input type="number" min={0} value={ex.restSecs} onChange={e => updateExercise(day.id, ex.id, 'restSecs', Number(e.target.value))} style={{ ...inputStyle, textAlign: 'center', padding: '10px 4px' }} />
-                      <button onClick={() => removeExercise(day.id, ex.id)} style={{ background: 'transparent', border: 'none', color: '#475569', fontSize: 18, cursor: 'pointer', padding: 0 }}>x</button>
+                      <button onClick={() => removeExercise(day.id, ex.id)} style={{ background: 'transparent', border: 'none', color: 'var(--text-subtle)', fontSize: 18, cursor: 'pointer', padding: 0 }}>x</button>
                     </div>
                   ))}
                 </div>
               )}
 
-              <button onClick={() => addExercise(day.id)} style={{ background: 'transparent', border: '1px dashed #2a2a3e', borderRadius: 8, padding: '8px 16px', color: '#64748b', fontSize: 13, cursor: 'pointer', width: '100%' }}>
+              <button onClick={() => addExercise(day.id)} style={{ background: 'transparent', border: '1px dashed #2a2a3e', borderRadius: 8, padding: '8px 16px', color: 'var(--text-muted)', fontSize: 13, cursor: 'pointer', width: '100%' }}>
                 + Add Exercise
               </button>
 
               {dayIdx === days.length - 1 && (
-                <button onClick={addDay} style={{ marginTop: 8, background: 'transparent', border: '1px dashed #2a2a3e', borderRadius: 8, padding: '8px 16px', color: '#3b82f6', fontSize: 13, cursor: 'pointer', width: '100%' }}>
+                <button onClick={addDay} style={{ marginTop: 8, background: 'transparent', border: '1px dashed #2a2a3e', borderRadius: 8, padding: '8px 16px', color: 'var(--accent)', fontSize: 13, cursor: 'pointer', width: '100%' }}>
                   + Add Training Day
                 </button>
               )}
             </Card>
           ))}
 
-          <button onClick={handleSaveProgram} style={{ background: '#3b82f6', color: '#fff', border: 'none', borderRadius: 10, padding: '13px 32px', fontSize: 15, fontWeight: 600, cursor: 'pointer', alignSelf: 'flex-start' }}>
+          <button onClick={handleSaveProgram} style={{ background: 'var(--accent)', color: '#fff', border: 'none', borderRadius: 10, padding: '13px 32px', fontSize: 15, fontWeight: 600, cursor: 'pointer', alignSelf: 'flex-start' }}>
             Save Program
           </button>
         </div>
@@ -340,28 +340,28 @@ export default function Programs() {
       {tab === 'history' && (
         <div style={{ display: 'flex', flexDirection: 'column', gap: 12 }}>
           {diary.length === 0 ? (
-            <div style={{ textAlign: 'center', padding: '50px 20px', background: '#13131f', border: '1px solid #2a2a3e', borderRadius: 16 }}>
+            <div style={{ textAlign: 'center', padding: '50px 20px', background: 'var(--card)', border: '1px solid #2a2a3e', borderRadius: 16 }}>
               <p style={{ fontSize: 40, marginBottom: 12 }}>📓</p>
-              <p style={{ fontSize: 15, fontWeight: 500, color: '#64748b' }}>No sessions logged yet</p>
-              <p style={{ fontSize: 13, color: '#475569', marginTop: 6 }}>Log a session from the My Program tab to see it here.</p>
+              <p style={{ fontSize: 15, fontWeight: 500, color: 'var(--text-muted)' }}>No sessions logged yet</p>
+              <p style={{ fontSize: 13, color: 'var(--text-subtle)', marginTop: 6 }}>Log a session from the My Program tab to see it here.</p>
             </div>
           ) : (
             diary.map(entry => (
               <Card key={entry.id}>
                 <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', marginBottom: 12 }}>
                   <div>
-                    <p style={{ fontWeight: 700, fontSize: 15, color: '#e2e8f0' }}>{entry.dayLabel}</p>
-                    <p style={{ fontSize: 12, color: '#475569', marginTop: 2 }}>
+                    <p style={{ fontWeight: 700, fontSize: 15, color: 'var(--text)' }}>{entry.dayLabel}</p>
+                    <p style={{ fontSize: 12, color: 'var(--text-subtle)', marginTop: 2 }}>
                       Week {entry.weekNumber} · {new Date(entry.date).toLocaleDateString('en-AU', { weekday: 'short', day: 'numeric', month: 'short' })}
                     </p>
                   </div>
                   <div style={{ display: 'flex', alignItems: 'center', gap: 10 }}>
                     <div style={{ textAlign: 'right' }}>
-                      <p style={{ fontSize: 18, fontWeight: 700, color: '#3b82f6' }}>{totalVolume(entry).toLocaleString()}</p>
-                      <p style={{ fontSize: 11, color: '#64748b' }}>kg volume</p>
+                      <p style={{ fontSize: 18, fontWeight: 700, color: 'var(--accent)' }}>{totalVolume(entry).toLocaleString()}</p>
+                      <p style={{ fontSize: 11, color: 'var(--text-muted)' }}>kg volume</p>
                     </div>
                     <button onClick={() => { deleteDiaryEntry(entry.id); showToast('Entry deleted', 'info') }}
-                      style={{ background: 'transparent', border: '1px solid #2a2a3e', borderRadius: 6, padding: '5px 10px', color: '#64748b', fontSize: 12, cursor: 'pointer' }}>
+                      style={{ background: 'transparent', border: '1px solid #2a2a3e', borderRadius: 6, padding: '5px 10px', color: 'var(--text-muted)', fontSize: 12, cursor: 'pointer' }}>
                       Delete
                     </button>
                   </div>
@@ -376,7 +376,7 @@ export default function Programs() {
                       <p style={{ fontWeight: 600, fontSize: 13, color: '#94a3b8', marginBottom: 6 }}>{name}</p>
                       <div style={{ display: 'flex', flexWrap: 'wrap', gap: 6 }}>
                         {sets.map((s, i) => (
-                          <span key={i} style={{ background: '#0f0f1a', border: '1px solid #2a2a3e', borderRadius: 6, padding: '4px 10px', fontSize: 13, color: '#e2e8f0' }}>
+                          <span key={i} style={{ background: 'var(--bg)', border: '1px solid #2a2a3e', borderRadius: 6, padding: '4px 10px', fontSize: 13, color: 'var(--text)' }}>
                             {s.repsCompleted} × {s.weightKg}kg
                           </span>
                         ))}
@@ -399,7 +399,7 @@ const sectionHead: React.CSSProperties = {
 }
 const labelText: React.CSSProperties = { fontSize: 13, color: '#94a3b8', marginBottom: 6 }
 const inputStyle: React.CSSProperties = {
-  background: '#0f0f1a', border: '1px solid #2a2a3e', borderRadius: 8,
-  padding: '10px 12px', color: '#e2e8f0', fontSize: 14, outline: 'none',
+  background: 'var(--bg)', border: '1px solid #2a2a3e', borderRadius: 8,
+  padding: '10px 12px', color: 'var(--text)', fontSize: 14, outline: 'none',
   width: '100%', boxSizing: 'border-box',
 }

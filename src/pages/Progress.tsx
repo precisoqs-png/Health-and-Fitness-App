@@ -6,7 +6,7 @@ import Card from '../components/Card'
 import ProgressBar from '../components/ProgressBar'
 
 const GOAL_ICONS = ['⚖️', '🏃', '💪', '🥩', '🚴', '🧘', '🏊', '⚡', '🎯', '🏆']
-const GOAL_COLORS = ['#3b82f6', '#22c55e', '#a855f7', '#ef4444', '#3b82f6', '#06b6d4', '#eab308', '#ec4899']
+const GOAL_COLORS = ['var(--accent)', '#22c55e', '#a855f7', '#ef4444', 'var(--accent)', '#06b6d4', '#eab308', '#ec4899']
 
 export default function Progress() {
   const { workouts, goals, weightLog, updateGoalProgress, addGoal, deleteGoal, addWeight } = useApp()
@@ -15,7 +15,7 @@ export default function Progress() {
   const [editingGoal, setEditingGoal] = useState<string | null>(null)
   const [editValue, setEditValue] = useState('')
   const [showAddGoal, setShowAddGoal] = useState(false)
-  const [newGoal, setNewGoal] = useState({ label: '', total: '', unit: '', icon: '🎯', color: '#3b82f6' })
+  const [newGoal, setNewGoal] = useState({ label: '', total: '', unit: '', icon: '🎯', color: 'var(--accent)' })
   const [weightInput, setWeightInput] = useState('')
   const [showWeightForm, setShowWeightForm] = useState(false)
 
@@ -65,7 +65,7 @@ export default function Progress() {
     if (!newGoal.label || !newGoal.total || !newGoal.unit) { showToast('Fill in all fields', 'error'); return }
     await addGoal({ label: newGoal.label, progress: 0, total: Number(newGoal.total), unit: newGoal.unit, icon: newGoal.icon, color: newGoal.color })
     showToast(`Goal "${newGoal.label}" created!`)
-    setNewGoal({ label: '', total: '', unit: '', icon: '🎯', color: '#3b82f6' })
+    setNewGoal({ label: '', total: '', unit: '', icon: '🎯', color: 'var(--accent)' })
     setShowAddGoal(false)
   }
 
@@ -85,7 +85,7 @@ export default function Progress() {
     <div style={{ maxWidth: 1200, margin: '0 auto', padding: isMobile ? '24px 16px' : '40px 24px' }}>
       <div style={{ marginBottom: 24 }}>
         <h1 style={{ fontSize: isMobile ? 22 : 28, fontWeight: 700, letterSpacing: '-0.5px', marginBottom: 4 }}>Progress</h1>
-        <p style={{ color: '#64748b', fontSize: 14 }}>Track your goals, weight, and milestones</p>
+        <p style={{ color: 'var(--text-muted)', fontSize: 14 }}>Track your goals, weight, and milestones</p>
       </div>
 
       {/* Stats strip */}
@@ -96,10 +96,10 @@ export default function Progress() {
           { label: 'Calories Burned', value: totalCalsBurned > 0 ? totalCalsBurned.toLocaleString() : '0', icon: '🔥' },
           { label: 'Current Streak', value: `${streak} days`, icon: '⚡' },
         ].map(({ label, value, icon }) => (
-          <div key={label} style={{ background: '#13131f', border: '1px solid #2a2a3e', borderRadius: 14, padding: isMobile ? 14 : 20, textAlign: 'center' }}>
+          <div key={label} style={{ background: 'var(--card)', border: '1px solid #2a2a3e', borderRadius: 14, padding: isMobile ? 14 : 20, textAlign: 'center' }}>
             <div style={{ fontSize: isMobile ? 22 : 28, marginBottom: 6 }}>{icon}</div>
-            <p style={{ fontSize: isMobile ? 18 : 24, fontWeight: 700, color: '#3b82f6', marginBottom: 4 }}>{value}</p>
-            <p style={{ fontSize: 12, color: '#64748b' }}>{label}</p>
+            <p style={{ fontSize: isMobile ? 18 : 24, fontWeight: 700, color: 'var(--accent)', marginBottom: 4 }}>{value}</p>
+            <p style={{ fontSize: 12, color: 'var(--text-muted)' }}>{label}</p>
           </div>
         ))}
       </div>
@@ -109,14 +109,14 @@ export default function Progress() {
         <Card>
           <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 6 }}>
             <h2 style={{ fontWeight: 600, fontSize: 16 }}>Active Goals</h2>
-            <button onClick={() => setShowAddGoal(!showAddGoal)} style={{ background: 'rgba(249,115,22,0.1)', border: '1px solid rgba(249,115,22,0.3)', borderRadius: 8, padding: '5px 12px', color: '#3b82f6', fontSize: 13, cursor: 'pointer', fontWeight: 600 }}>
+            <button onClick={() => setShowAddGoal(!showAddGoal)} style={{ background: 'rgba(249,115,22,0.1)', border: '1px solid rgba(249,115,22,0.3)', borderRadius: 8, padding: '5px 12px', color: 'var(--accent)', fontSize: 13, cursor: 'pointer', fontWeight: 600 }}>
               {showAddGoal ? '✕' : '+ Add'}
             </button>
           </div>
-          <p style={{ color: '#475569', fontSize: 13, marginBottom: 16 }}>Tap "Update" to log your progress</p>
+          <p style={{ color: 'var(--text-subtle)', fontSize: 13, marginBottom: 16 }}>Tap "Update" to log your progress</p>
 
           {showAddGoal && (
-            <form onSubmit={handleAddGoal} style={{ background: '#0f0f1a', borderRadius: 10, padding: 16, marginBottom: 20 }}>
+            <form onSubmit={handleAddGoal} style={{ background: 'var(--bg)', borderRadius: 10, padding: 16, marginBottom: 20 }}>
               <p style={{ fontWeight: 600, fontSize: 14, marginBottom: 12, color: '#94a3b8' }}>New Goal</p>
               <div style={{ display: 'flex', flexDirection: 'column', gap: 10 }}>
                 <input placeholder="Goal name (e.g. Run a 5K)" value={newGoal.label} onChange={e => setNewGoal(g => ({ ...g, label: e.target.value }))} style={inputStyle} />
@@ -125,15 +125,15 @@ export default function Progress() {
                   <input placeholder="Unit (e.g. km)" value={newGoal.unit} onChange={e => setNewGoal(g => ({ ...g, unit: e.target.value }))} style={inputStyle} />
                 </div>
                 <div>
-                  <p style={{ fontSize: 12, color: '#64748b', marginBottom: 6 }}>Icon</p>
+                  <p style={{ fontSize: 12, color: 'var(--text-muted)', marginBottom: 6 }}>Icon</p>
                   <div style={{ display: 'flex', gap: 6, flexWrap: 'wrap' }}>
                     {GOAL_ICONS.map(ic => (
-                      <button key={ic} type="button" onClick={() => setNewGoal(g => ({ ...g, icon: ic }))} style={{ fontSize: 18, background: newGoal.icon === ic ? 'rgba(249,115,22,0.2)' : '#13131f', border: `1px solid ${newGoal.icon === ic ? '#3b82f6' : '#2a2a3e'}`, borderRadius: 8, padding: '4px 8px', cursor: 'pointer' }}>{ic}</button>
+                      <button key={ic} type="button" onClick={() => setNewGoal(g => ({ ...g, icon: ic }))} style={{ fontSize: 18, background: newGoal.icon === ic ? 'rgba(249,115,22,0.2)' : 'var(--card)', border: `1px solid ${newGoal.icon === ic ? 'var(--accent)' : 'var(--border)'}`, borderRadius: 8, padding: '4px 8px', cursor: 'pointer' }}>{ic}</button>
                     ))}
                   </div>
                 </div>
                 <div>
-                  <p style={{ fontSize: 12, color: '#64748b', marginBottom: 6 }}>Color</p>
+                  <p style={{ fontSize: 12, color: 'var(--text-muted)', marginBottom: 6 }}>Color</p>
                   <div style={{ display: 'flex', gap: 6 }}>
                     {GOAL_COLORS.map(c => (
                       <button key={c} type="button" onClick={() => setNewGoal(g => ({ ...g, color: c }))} style={{ width: 24, height: 24, borderRadius: '50%', background: c, border: newGoal.color === c ? '2px solid #fff' : '2px solid transparent', cursor: 'pointer' }} />
@@ -141,8 +141,8 @@ export default function Progress() {
                   </div>
                 </div>
                 <div style={{ display: 'flex', gap: 8, marginTop: 4 }}>
-                  <button type="submit" style={{ background: '#3b82f6', color: '#fff', border: 'none', borderRadius: 8, padding: '9px 20px', fontWeight: 600, cursor: 'pointer', fontSize: 13 }}>Create Goal</button>
-                  <button type="button" onClick={() => setShowAddGoal(false)} style={{ background: 'transparent', border: '1px solid #2a2a3e', borderRadius: 8, padding: '9px 14px', color: '#64748b', cursor: 'pointer', fontSize: 13 }}>Cancel</button>
+                  <button type="submit" style={{ background: 'var(--accent)', color: '#fff', border: 'none', borderRadius: 8, padding: '9px 20px', fontWeight: 600, cursor: 'pointer', fontSize: 13 }}>Create Goal</button>
+                  <button type="button" onClick={() => setShowAddGoal(false)} style={{ background: 'transparent', border: '1px solid #2a2a3e', borderRadius: 8, padding: '9px 14px', color: 'var(--text-muted)', cursor: 'pointer', fontSize: 13 }}>Cancel</button>
                 </div>
               </div>
             </form>
@@ -166,7 +166,7 @@ export default function Progress() {
                   </div>
                   <ProgressBar pct={pct} color={color} height={8} />
                   <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginTop: 6 }}>
-                    <p style={{ fontSize: 12, color: '#475569' }}>{pct}% complete{pct === 100 ? ' 🎉' : ''}</p>
+                    <p style={{ fontSize: 12, color: 'var(--text-subtle)' }}>{pct}% complete{pct === 100 ? ' 🎉' : ''}</p>
                     {isEditing ? (
                       <div style={{ display: 'flex', gap: 6, alignItems: 'center' }}>
                         <input
@@ -178,10 +178,10 @@ export default function Progress() {
                           value={editValue}
                           onChange={e => setEditValue(e.target.value)}
                           onKeyDown={e => { if (e.key === 'Enter') saveGoalEdit(label, total); if (e.key === 'Escape') setEditingGoal(null) }}
-                          style={{ width: 70, background: '#0f0f1a', border: `1px solid ${color}`, borderRadius: 6, padding: '4px 8px', color: '#e2e8f0', fontSize: 13, outline: 'none' }}
+                          style={{ width: 70, background: 'var(--bg)', border: `1px solid ${color}`, borderRadius: 6, padding: '4px 8px', color: 'var(--text)', fontSize: 13, outline: 'none' }}
                         />
                         <button onClick={() => saveGoalEdit(label, total)} style={{ background: color, color: '#fff', border: 'none', borderRadius: 6, padding: '4px 10px', fontSize: 12, cursor: 'pointer', fontWeight: 600 }}>✓</button>
-                        <button onClick={() => setEditingGoal(null)} style={{ background: 'transparent', border: '1px solid #2a2a3e', borderRadius: 6, padding: '4px 8px', fontSize: 12, color: '#64748b', cursor: 'pointer' }}>✕</button>
+                        <button onClick={() => setEditingGoal(null)} style={{ background: 'transparent', border: '1px solid #2a2a3e', borderRadius: 6, padding: '4px 8px', fontSize: 12, color: 'var(--text-muted)', cursor: 'pointer' }}>✕</button>
                       </div>
                     ) : (
                       <button onClick={() => { setEditingGoal(label); setEditValue(progress.toString()) }} style={{ background: 'transparent', border: `1px solid ${color}40`, borderRadius: 6, padding: '3px 10px', fontSize: 12, color, cursor: 'pointer' }}>
@@ -200,17 +200,17 @@ export default function Progress() {
           <h2 style={{ fontWeight: 600, fontSize: 16, marginBottom: 18 }}>Milestones</h2>
           <div style={{ display: 'flex', flexDirection: 'column', gap: 4 }}>
             {milestones.map(({ label, achieved }) => (
-              <div key={label} style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', padding: '10px 12px', borderRadius: 10, background: achieved ? 'rgba(34,197,94,0.06)' : '#0f0f1a' }}>
+              <div key={label} style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', padding: '10px 12px', borderRadius: 10, background: achieved ? 'rgba(34,197,94,0.06)' : 'var(--bg)' }}>
                 <div style={{ display: 'flex', gap: 10, alignItems: 'center' }}>
                   <span style={{ fontSize: 16 }}>{achieved ? '✅' : '🔒'}</span>
-                  <span style={{ fontSize: 13, color: achieved ? '#e2e8f0' : '#475569' }}>{label}</span>
+                  <span style={{ fontSize: 13, color: achieved ? 'var(--text)' : 'var(--text-subtle)' }}>{label}</span>
                 </div>
                 <span style={{ fontSize: 12, color: achieved ? '#22c55e' : '#334155' }}>{achieved ? 'Done' : '—'}</span>
               </div>
             ))}
           </div>
           {totalMins > 0 && (
-            <p style={{ textAlign: 'center', color: '#475569', fontSize: 12, marginTop: 16 }}>
+            <p style={{ textAlign: 'center', color: 'var(--text-subtle)', fontSize: 12, marginTop: 16 }}>
               Total active time: {Math.floor(totalMins / 60) > 0 ? `${Math.floor(totalMins / 60)}h ` : ''}{totalMins % 60}m
             </p>
           )}
@@ -222,9 +222,9 @@ export default function Progress() {
         <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 16 }}>
           <div>
             <h2 style={{ fontWeight: 600, fontSize: 16 }}>⚖️ Body Weight</h2>
-            <p style={{ color: '#475569', fontSize: 13, marginTop: 2 }}>Track your weight over time</p>
+            <p style={{ color: 'var(--text-subtle)', fontSize: 13, marginTop: 2 }}>Track your weight over time</p>
           </div>
-          <button onClick={() => setShowWeightForm(!showWeightForm)} style={{ background: 'rgba(249,115,22,0.1)', border: '1px solid rgba(249,115,22,0.3)', borderRadius: 8, padding: '7px 16px', color: '#3b82f6', fontSize: 13, cursor: 'pointer', fontWeight: 600 }}>
+          <button onClick={() => setShowWeightForm(!showWeightForm)} style={{ background: 'rgba(249,115,22,0.1)', border: '1px solid rgba(249,115,22,0.3)', borderRadius: 8, padding: '7px 16px', color: 'var(--accent)', fontSize: 13, cursor: 'pointer', fontWeight: 600 }}>
             {showWeightForm ? '✕' : '+ Log weight'}
           </button>
         </div>
@@ -235,8 +235,8 @@ export default function Progress() {
               <span style={{ fontSize: 13, color: '#94a3b8' }}>Weight (kg)</span>
               <input type="number" step="0.1" min="20" max="500" placeholder="e.g. 78.5" autoFocus value={weightInput} onChange={e => setWeightInput(e.target.value)} style={inputStyle} />
             </label>
-            <button type="submit" style={{ background: '#3b82f6', color: '#fff', border: 'none', borderRadius: 8, padding: '10px 22px', fontWeight: 600, cursor: 'pointer', fontSize: 14, whiteSpace: 'nowrap' }}>Save</button>
-            <button type="button" onClick={() => setShowWeightForm(false)} style={{ background: 'transparent', border: '1px solid #2a2a3e', borderRadius: 8, padding: '10px 14px', color: '#64748b', cursor: 'pointer', fontSize: 14 }}>✕</button>
+            <button type="submit" style={{ background: 'var(--accent)', color: '#fff', border: 'none', borderRadius: 8, padding: '10px 22px', fontWeight: 600, cursor: 'pointer', fontSize: 14, whiteSpace: 'nowrap' }}>Save</button>
+            <button type="button" onClick={() => setShowWeightForm(false)} style={{ background: 'transparent', border: '1px solid #2a2a3e', borderRadius: 8, padding: '10px 14px', color: 'var(--text-muted)', cursor: 'pointer', fontSize: 14 }}>✕</button>
           </form>
         )}
 
@@ -254,9 +254,9 @@ export default function Progress() {
                 const pct = ((entry.weight - minW) / range) * 60 + 20
                 return (
                   <div key={entry.id} style={{ flex: 1, display: 'flex', flexDirection: 'column', alignItems: 'center', gap: 4, height: '100%', justifyContent: 'flex-end' }}>
-                    <p style={{ fontSize: 10, color: '#64748b' }}>{entry.weight}</p>
+                    <p style={{ fontSize: 10, color: 'var(--text-muted)' }}>{entry.weight}</p>
                     <div style={{ width: '100%', height: `${pct}px`, background: 'linear-gradient(to top, #3b82f6, #fb923c)', borderRadius: '4px 4px 0 0', minHeight: 4 }} />
-                    <p style={{ fontSize: 10, color: '#475569' }}>{new Date(entry.date).toLocaleDateString('en-US', { month: 'numeric', day: 'numeric' })}</p>
+                    <p style={{ fontSize: 10, color: 'var(--text-subtle)' }}>{new Date(entry.date).toLocaleDateString('en-US', { month: 'numeric', day: 'numeric' })}</p>
                   </div>
                 )
               })}
@@ -264,9 +264,9 @@ export default function Progress() {
             {/* Recent list */}
             <div style={{ display: 'flex', flexDirection: 'column', gap: 6 }}>
               {recentWeights.slice(0, 5).map(entry => (
-                <div key={entry.id} style={{ display: 'flex', justifyContent: 'space-between', padding: '8px 12px', background: '#0f0f1a', borderRadius: 8 }}>
+                <div key={entry.id} style={{ display: 'flex', justifyContent: 'space-between', padding: '8px 12px', background: 'var(--bg)', borderRadius: 8 }}>
                   <span style={{ fontSize: 13, color: '#94a3b8' }}>{new Date(entry.date).toLocaleDateString('en-US', { weekday: 'short', month: 'short', day: 'numeric', hour: 'numeric', minute: '2-digit' })}</span>
-                  <span style={{ fontSize: 14, fontWeight: 600, color: '#3b82f6' }}>{entry.weight} kg</span>
+                  <span style={{ fontSize: 14, fontWeight: 600, color: 'var(--accent)' }}>{entry.weight} kg</span>
                 </div>
               ))}
             </div>
@@ -281,10 +281,10 @@ export default function Progress() {
         <div style={{ display: 'flex', alignItems: 'flex-end', gap: isMobile ? 12 : 24, height: 140, marginTop: 16 }}>
           {chartData.map(({ week, workouts: wCount, calories }) => (
             <div key={week} style={{ flex: 1, display: 'flex', flexDirection: 'column', alignItems: 'center', gap: 6, height: '100%', justifyContent: 'flex-end' }}>
-              <p style={{ fontSize: 11, color: '#64748b' }}>{calories > 0 ? calories : '—'}</p>
+              <p style={{ fontSize: 11, color: 'var(--text-muted)' }}>{calories > 0 ? calories : '—'}</p>
               <div style={{ width: '100%', height: calories > 0 ? `${(calories / maxCalories) * 100}px` : '4px', background: calories > 0 ? 'linear-gradient(to top, #3b82f6, #fb923c)' : '#1e1e2e', borderRadius: '6px 6px 0 0' }} />
-              <p style={{ fontSize: 12, color: '#64748b' }}>{week}</p>
-              {!isMobile && <p style={{ fontSize: 11, color: '#475569' }}>{wCount > 0 ? `${wCount} sessions` : 'no data'}</p>}
+              <p style={{ fontSize: 12, color: 'var(--text-muted)' }}>{week}</p>
+              {!isMobile && <p style={{ fontSize: 11, color: 'var(--text-subtle)' }}>{wCount > 0 ? `${wCount} sessions` : 'no data'}</p>}
             </div>
           ))}
         </div>
@@ -294,7 +294,7 @@ export default function Progress() {
 }
 
 const inputStyle: React.CSSProperties = {
-  background: '#0f0f1a', border: '1px solid #2a2a3e', borderRadius: 8,
-  padding: '9px 12px', color: '#e2e8f0', fontSize: 14, outline: 'none',
+  background: 'var(--bg)', border: '1px solid #2a2a3e', borderRadius: 8,
+  padding: '9px 12px', color: 'var(--text)', fontSize: 14, outline: 'none',
   width: '100%', boxSizing: 'border-box',
 }

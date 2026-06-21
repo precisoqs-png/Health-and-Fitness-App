@@ -48,7 +48,7 @@ export interface Profile {
   age: number
   gender: 'male' | 'female'
   activityLevel: 'sedentary' | 'light' | 'moderate' | 'active' | 'very_active'
-  goalType: 'lose' | 'maintain' | 'gain'
+  goalType: 'lose_fast' | 'lose' | 'lose_slow' | 'maintain' | 'gain'
   goalWeight: number   // kg
   currentWeight: number // kg
 }
@@ -155,13 +155,13 @@ const defaultProfile: Profile = {
   age: 30,
   gender: 'male',
   activityLevel: 'moderate',
-  goalType: 'maintain',
+  goalType: 'lose',
   goalWeight: 80,
   currentWeight: 80,
 }
 
 const defaultGoals: Goal[] = [
-  { label: 'Lose 5kg', progress: 3.2, total: 5, unit: 'kg', icon: '⚖️', color: '#3b82f6' },
+  { label: 'Lose 5kg', progress: 3.2, total: 5, unit: 'kg', icon: '⚖️', color: 'var(--accent)' },
   { label: 'Run 100km this month', progress: 68, total: 100, unit: 'km', icon: '🏃', color: '#22c55e' },
   { label: 'Workout 20 days', progress: 14, total: 20, unit: 'days', icon: '💪', color: '#a855f7' },
   { label: 'Hit protein goal 30 days', progress: 22, total: 30, unit: 'days', icon: '🥩', color: '#ef4444' },

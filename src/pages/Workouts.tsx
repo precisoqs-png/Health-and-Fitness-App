@@ -5,8 +5,8 @@ import { useMobile } from '../hooks/useMobile'
 import Card from '../components/Card'
 
 const workoutTypes = [
-  { id: 'running', name: 'Running', icon: '🏃', desc: 'Outdoor or treadmill runs', color: '#3b82f6', calsPerMin: 10 },
-  { id: 'cycling', name: 'Cycling', icon: '🚴', desc: 'Road, trail, or stationary', color: '#3b82f6', calsPerMin: 8 },
+  { id: 'running', name: 'Running', icon: '🏃', desc: 'Outdoor or treadmill runs', color: 'var(--accent)', calsPerMin: 10 },
+  { id: 'cycling', name: 'Cycling', icon: '🚴', desc: 'Road, trail, or stationary', color: 'var(--accent)', calsPerMin: 8 },
   { id: 'strength', name: 'Strength', icon: '🏋️', desc: 'Weights and resistance training', color: '#a855f7', calsPerMin: 6 },
   { id: 'yoga', name: 'Yoga', icon: '🧘', desc: 'Flexibility and mindfulness', color: '#22c55e', calsPerMin: 4 },
   { id: 'hiit', name: 'HIIT', icon: '⚡', desc: 'High-intensity intervals', color: '#ef4444', calsPerMin: 12 },
@@ -76,10 +76,10 @@ export default function Workouts() {
       <div style={{ marginBottom: 24, display: 'flex', justifyContent: 'space-between', alignItems: 'flex-end' }}>
         <div>
           <h1 style={{ fontSize: isMobile ? 22 : 28, fontWeight: 700, letterSpacing: '-0.5px', marginBottom: 4 }}>Workout Tracker</h1>
-          <p style={{ color: '#64748b', fontSize: 14 }}>Select a type and start the timer, or log a past workout</p>
+          <p style={{ color: 'var(--text-muted)', fontSize: 14 }}>Select a type and start the timer, or log a past workout</p>
         </div>
         {streak > 0 && (
-          <div style={{ background: 'rgba(249,115,22,0.1)', border: '1px solid rgba(249,115,22,0.3)', borderRadius: 10, padding: '6px 14px', fontSize: 13, color: '#3b82f6', whiteSpace: 'nowrap' }}>
+          <div style={{ background: 'rgba(249,115,22,0.1)', border: '1px solid rgba(249,115,22,0.3)', borderRadius: 10, padding: '6px 14px', fontSize: 13, color: 'var(--accent)', whiteSpace: 'nowrap' }}>
             🔥 {streak}-day streak
           </div>
         )}
@@ -95,8 +95,8 @@ export default function Workouts() {
               key={id}
               onClick={() => { if (!running && !showManual) setSelected(isActive ? null : id) }}
               style={{
-                background: isActive ? `${color}18` : '#13131f',
-                border: `1px solid ${isActive ? color : '#2a2a3e'}`,
+                background: isActive ? `${color}18` : 'var(--card)',
+                border: `1px solid ${isActive ? color : 'var(--border)'}`,
                 borderRadius: 14,
                 padding: isMobile ? 14 : 22,
                 cursor: (running || showManual) ? 'default' : 'pointer',
@@ -111,10 +111,10 @@ export default function Workouts() {
                 </div>
               </div>
               <h3 style={{ fontWeight: 700, fontSize: isMobile ? 15 : 18, marginBottom: 3 }}>{name}</h3>
-              {!isMobile && <p style={{ color: '#64748b', fontSize: 13, marginBottom: 14 }}>{desc}</p>}
+              {!isMobile && <p style={{ color: 'var(--text-muted)', fontSize: 13, marginBottom: 14 }}>{desc}</p>}
               <div style={{ borderTop: '1px solid #1e1e2e', paddingTop: 10, marginTop: isMobile ? 8 : 0 }}>
-                <p style={{ fontSize: 11, color: '#475569', marginBottom: 4, textTransform: 'uppercase', letterSpacing: 1 }}>Sessions</p>
-                <p style={{ fontSize: 12, color: '#64748b' }}>{sessions.length > 0 ? `${sessions.length} logged` : 'None yet'}</p>
+                <p style={{ fontSize: 11, color: 'var(--text-subtle)', marginBottom: 4, textTransform: 'uppercase', letterSpacing: 1 }}>Sessions</p>
+                <p style={{ fontSize: 12, color: 'var(--text-muted)' }}>{sessions.length > 0 ? `${sessions.length} logged` : 'None yet'}</p>
               </div>
             </div>
           )
@@ -129,16 +129,16 @@ export default function Workouts() {
             {running ? 'Session in progress' : `Ready to start ${workoutTypes.find(w => w.id === selected)?.name}?`}
           </h2>
           {running && (
-            <p style={{ fontSize: 56, fontWeight: 800, color: '#3b82f6', letterSpacing: 3, margin: '16px 0', fontVariantNumeric: 'tabular-nums' }}>
+            <p style={{ fontSize: 56, fontWeight: 800, color: 'var(--accent)', letterSpacing: 3, margin: '16px 0', fontVariantNumeric: 'tabular-nums' }}>
               {fmt(elapsed)}
             </p>
           )}
-          <p style={{ color: '#64748b', marginBottom: 20, fontSize: 14 }}>
+          <p style={{ color: 'var(--text-muted)', marginBottom: 20, fontSize: 14 }}>
             {running ? 'Tracking your session live.' : 'Start the timer when you begin your workout.'}
           </p>
           <div style={{ display: 'flex', gap: 12, justifyContent: 'center' }}>
             {!running ? (
-              <button onClick={startSession} style={{ background: '#3b82f6', color: '#fff', border: 'none', borderRadius: 10, padding: '13px 36px', fontSize: 16, fontWeight: 600, cursor: 'pointer' }}>
+              <button onClick={startSession} style={{ background: 'var(--accent)', color: '#fff', border: 'none', borderRadius: 10, padding: '13px 36px', fontSize: 16, fontWeight: 600, cursor: 'pointer' }}>
                 Start Workout ⚡
               </button>
             ) : (
@@ -146,7 +146,7 @@ export default function Workouts() {
                 <button onClick={stopSession} style={{ background: '#22c55e', color: '#fff', border: 'none', borderRadius: 10, padding: '13px 28px', fontSize: 15, fontWeight: 600, cursor: 'pointer' }}>
                   Stop & Save ✓
                 </button>
-                <button onClick={() => { setRunning(false); setElapsed(0); setSelected(null) }} style={{ background: 'transparent', color: '#64748b', border: '1px solid #2a2a3e', borderRadius: 10, padding: '13px 20px', fontSize: 14, cursor: 'pointer' }}>
+                <button onClick={() => { setRunning(false); setElapsed(0); setSelected(null) }} style={{ background: 'transparent', color: 'var(--text-muted)', border: '1px solid #2a2a3e', borderRadius: 10, padding: '13px 20px', fontSize: 14, cursor: 'pointer' }}>
                   Cancel
                 </button>
               </>
@@ -177,18 +177,18 @@ export default function Workouts() {
               </label>
             </div>
             <label style={labelStyle}>
-              <span style={labelTextStyle}>Calories burned <span style={{ color: '#475569' }}>(optional — auto-calculated if blank)</span></span>
+              <span style={labelTextStyle}>Calories burned <span style={{ color: 'var(--text-subtle)' }}>(optional — auto-calculated if blank)</span></span>
               <input type="number" min="1" placeholder={`Auto: ~${Number(manual.duration || 30) * (workoutTypes.find(w => w.id === manual.type)?.calsPerMin ?? 8)} kcal`} value={manual.calories} onChange={e => setManual(m => ({ ...m, calories: e.target.value }))} style={{ ...inputStyle, maxWidth: 200 }} />
             </label>
             <div style={{ display: 'flex', gap: 10, marginTop: 4 }}>
-              <button type="submit" style={{ background: '#3b82f6', color: '#fff', border: 'none', borderRadius: 8, padding: '10px 24px', fontWeight: 600, cursor: 'pointer', fontSize: 14 }}>Save Workout</button>
-              <button type="button" onClick={() => setShowManual(false)} style={{ background: 'transparent', color: '#64748b', border: '1px solid #2a2a3e', borderRadius: 8, padding: '10px 16px', cursor: 'pointer', fontSize: 14 }}>Cancel</button>
+              <button type="submit" style={{ background: 'var(--accent)', color: '#fff', border: 'none', borderRadius: 8, padding: '10px 24px', fontWeight: 600, cursor: 'pointer', fontSize: 14 }}>Save Workout</button>
+              <button type="button" onClick={() => setShowManual(false)} style={{ background: 'transparent', color: 'var(--text-muted)', border: '1px solid #2a2a3e', borderRadius: 8, padding: '10px 16px', cursor: 'pointer', fontSize: 14 }}>Cancel</button>
             </div>
           </form>
         </Card>
       ) : (
         !running && (
-          <button onClick={() => { setSelected(null); setShowManual(true) }} style={{ background: 'transparent', border: '2px dashed #2a2a3e', borderRadius: 12, padding: '14px 24px', color: '#475569', fontSize: 14, cursor: 'pointer', fontWeight: 500, marginBottom: 20, display: 'block' }}>
+          <button onClick={() => { setSelected(null); setShowManual(true) }} style={{ background: 'transparent', border: '2px dashed #2a2a3e', borderRadius: 12, padding: '14px 24px', color: 'var(--text-subtle)', fontSize: 14, cursor: 'pointer', fontWeight: 500, marginBottom: 20, display: 'block' }}>
             + Log a past workout
           </button>
         )
@@ -219,9 +219,9 @@ export default function Workouts() {
       )}
 
       {workouts.length === 0 && !selected && !showManual && (
-        <div style={{ textAlign: 'center', padding: '48px 0', color: '#475569' }}>
+        <div style={{ textAlign: 'center', padding: '48px 0', color: 'var(--text-subtle)' }}>
           <p style={{ fontSize: 44, marginBottom: 12 }}>💪</p>
-          <p style={{ fontSize: 16, fontWeight: 500, color: '#64748b' }}>No workouts logged yet</p>
+          <p style={{ fontSize: 16, fontWeight: 500, color: 'var(--text-muted)' }}>No workouts logged yet</p>
           <p style={{ fontSize: 14, marginTop: 6 }}>Pick a workout type above or log a past workout to get started.</p>
         </div>
       )}
@@ -232,21 +232,21 @@ export default function Workouts() {
 function WorkoutRow({ workout: w, showDate, onDelete }: { workout: Workout; showDate?: boolean; onDelete: () => void }) {
   const [confirming, setConfirming] = useState(false)
   return (
-    <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', padding: '10px 14px', background: '#0f0f1a', borderRadius: 10 }}>
+    <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', padding: '10px 14px', background: 'var(--bg)', borderRadius: 10 }}>
       <div style={{ display: 'flex', gap: 10, alignItems: 'center' }}>
         <span style={{ fontSize: 20 }}>{w.icon}</span>
         <div>
           <p style={{ fontWeight: 500, fontSize: 14 }}>{w.type}</p>
-          {showDate && <p style={{ color: '#475569', fontSize: 12 }}>{new Date(w.date).toLocaleDateString('en-US', { weekday: 'short', month: 'short', day: 'numeric' })}</p>}
+          {showDate && <p style={{ color: 'var(--text-subtle)', fontSize: 12 }}>{new Date(w.date).toLocaleDateString('en-US', { weekday: 'short', month: 'short', day: 'numeric' })}</p>}
         </div>
       </div>
       <div style={{ display: 'flex', gap: 12, alignItems: 'center' }}>
-        <span style={{ color: '#64748b', fontSize: 13 }}>{w.duration} min</span>
-        <span style={{ color: '#3b82f6', fontSize: 13, fontWeight: 500 }}>{w.calories} kcal</span>
+        <span style={{ color: 'var(--text-muted)', fontSize: 13 }}>{w.duration} min</span>
+        <span style={{ color: 'var(--accent)', fontSize: 13, fontWeight: 500 }}>{w.calories} kcal</span>
         {confirming ? (
           <>
             <button onClick={onDelete} style={{ background: '#ef4444', color: '#fff', border: 'none', borderRadius: 6, padding: '4px 10px', fontSize: 12, cursor: 'pointer' }}>Delete</button>
-            <button onClick={() => setConfirming(false)} style={{ background: 'transparent', border: '1px solid #2a2a3e', borderRadius: 6, padding: '4px 8px', fontSize: 12, color: '#64748b', cursor: 'pointer' }}>✕</button>
+            <button onClick={() => setConfirming(false)} style={{ background: 'transparent', border: '1px solid #2a2a3e', borderRadius: 6, padding: '4px 8px', fontSize: 12, color: 'var(--text-muted)', cursor: 'pointer' }}>✕</button>
           </>
         ) : (
           <button onClick={() => setConfirming(true)} style={{ background: 'transparent', border: 'none', color: '#334155', fontSize: 18, cursor: 'pointer', padding: '2px 6px' }}>⋯</button>
@@ -261,7 +261,7 @@ import type { Workout } from '../context/AppContext'
 const labelStyle: React.CSSProperties = { display: 'flex', flexDirection: 'column', gap: 6 }
 const labelTextStyle: React.CSSProperties = { fontSize: 13, color: '#94a3b8', fontWeight: 500 }
 const inputStyle: React.CSSProperties = {
-  background: '#0f0f1a', border: '1px solid #2a2a3e', borderRadius: 8,
-  padding: '10px 12px', color: '#e2e8f0', fontSize: 14, outline: 'none',
+  background: 'var(--bg)', border: '1px solid #2a2a3e', borderRadius: 8,
+  padding: '10px 12px', color: 'var(--text)', fontSize: 14, outline: 'none',
   width: '100%', boxSizing: 'border-box',
 }

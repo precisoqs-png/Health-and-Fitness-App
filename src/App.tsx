@@ -18,8 +18,8 @@ export default function App() {
 
   if (loading) {
     return (
-      <div style={{ minHeight: '100vh', background: '#0f0f1a', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
-        <p style={{ color: '#475569', fontSize: 16 }}>Loading…</p>
+      <div style={{ minHeight: '100vh', background: 'var(--bg)', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
+        <p style={{ color: 'var(--text-subtle)', fontSize: 16 }}>Loading…</p>
       </div>
     )
   }
@@ -27,7 +27,7 @@ export default function App() {
   if (!user) return <Auth />
 
   return (
-    <div style={{ minHeight: '100vh', background: '#0f0f1a', color: '#e2e8f0' }}>
+    <div style={{ minHeight: '100vh', background: 'var(--bg)', color: 'var(--text)' }}>
       <Navbar />
       <div style={{ paddingBottom: isMobile ? 72 : 0 }}>
         <Routes>

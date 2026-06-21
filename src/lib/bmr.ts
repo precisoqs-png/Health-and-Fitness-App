@@ -1,5 +1,5 @@
 export type ActivityLevel = 'sedentary' | 'light' | 'moderate' | 'active' | 'very_active'
-export type GoalType = 'lose' | 'maintain' | 'gain'
+export type GoalType = 'lose_fast' | 'lose' | 'lose_slow' | 'maintain' | 'gain'
 export type Gender = 'male' | 'female'
 
 const ACTIVITY_MULTIPLIERS: Record<ActivityLevel, number> = {
@@ -9,6 +9,14 @@ const ACTIVITY_MULTIPLIERS: Record<ActivityLevel, number> = {
   active: 1.725,
   very_active: 1.9,
 }
+
+export const GOAL_OPTIONS: Array<{ value: GoalType; label: string; delta: number }> = [
+  { value: 'lose_fast',  label: 'Lose — Aggressive (−700 kcal/day, ~0.9kg/week)', delta: -700 },
+  { value: 'lose',       label: 'Lose — Moderate (−500 kcal/day, ~0.5kg/week)',   delta: -500 },
+  { value: 'lose_slow',  label: 'Lose — Mild (−250 kcal/day, ~0.25kg/week)',       delta: -250 },
+  { value: 'maintain',   label: 'Maintain Weight (TDEE)',                           delta:    0 },
+  { value: 'gain',       label: 'Gain Muscle — Lean Bulk (+300 kcal/day)',          delta: +300 },
+]
 
 export function calcBMR(weightKg: number, heightCm: number, age: number, gender: Gender): number {
   // Mifflin-St Jeor
@@ -21,14 +29,13 @@ export function calcTDEE(bmr: number, activityLevel: ActivityLevel): number {
 }
 
 export function calcCalorieTarget(tdee: number, goalType: GoalType): number {
-  if (goalType === 'lose') return tdee - 500
-  if (goalType === 'gain') return tdee + 300
-  return tdee
+  const option = GOAL_OPTIONS.find(o => o.value === goalType)
+  return tdee + (option?.delta ?? -500)
 }
 
 export function calcMacros(calories: number, weightKg: number): { protein: number; carbs: number; fat: number } {
-  const protein = Math.round(weightKg * 2)           // 2g per kg bodyweight
-  const fat = Math.round((calories * 0.25) / 9)      // 25% of calories from fat
+  const protein = Math.round(weightKg * 2)
+  const fat = Math.round((calories * 0.25) / 9)
   const carbs = Math.round((calories - protein * 4 - fat * 9) / 4)
   return { protein, carbs, fat: Math.max(fat, 20) }
 }

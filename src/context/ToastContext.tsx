@@ -27,7 +27,7 @@ export function ToastProvider({ children }: { children: ReactNode }) {
   const colors: Record<ToastType, string> = {
     success: '#22c55e',
     error: '#ef4444',
-    info: '#3b82f6',
+    info: 'var(--accent)',
   }
 
   return (
@@ -36,14 +36,14 @@ export function ToastProvider({ children }: { children: ReactNode }) {
       <div style={{ position: 'fixed', bottom: 80, left: '50%', transform: 'translateX(-50%)', display: 'flex', flexDirection: 'column', gap: 8, zIndex: 999, pointerEvents: 'none', width: 'max-content', maxWidth: 'calc(100vw - 32px)' }}>
         {toasts.map(t => (
           <div key={t.id} style={{
-            background: '#13131f',
+            background: 'var(--card)',
             border: `1px solid ${colors[t.type]}40`,
             borderLeft: `3px solid ${colors[t.type]}`,
             borderRadius: 10,
             padding: '12px 20px',
             fontSize: 14,
             fontWeight: 500,
-            color: '#e2e8f0',
+            color: 'var(--text)',
             boxShadow: '0 4px 24px rgba(0,0,0,0.4)',
             animation: 'slideUp 0.2s ease',
           }}>

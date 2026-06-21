@@ -4,14 +4,16 @@ import { useAuth } from '../context/AuthContext'
 import { useToast } from '../context/ToastContext'
 import { useMobile } from '../hooks/useMobile'
 import Card from '../components/Card'
-import { calcBMR, calcTDEE, calcCalorieTarget, calcMacros } from '../lib/bmr'
+import { calcBMR, calcTDEE, calcCalorieTarget, calcMacros, GOAL_OPTIONS } from '../lib/bmr'
 import type { ActivityLevel, GoalType, Gender } from '../lib/bmr'
+import { useTheme, THEMES } from '../context/ThemeContext'
 
 export default function Settings() {
   const { profile, updateProfile } = useApp()
   const { user, signOut } = useAuth()
   const { showToast } = useToast()
   const isMobile = useMobile()
+  const { theme, setTheme } = useTheme()
   const [form, setForm] = useState({ ...profile })
 
   const bmr = Math.round(calcBMR(form.currentWeight, form.height, form.age, form.gender as Gender))
@@ -40,7 +42,7 @@ export default function Settings() {
     <div style={{ maxWidth: 700, margin: '0 auto', padding: isMobile ? '24px 16px' : '40px 24px' }}>
       <div style={{ marginBottom: 28 }}>
         <h1 style={{ fontSize: isMobile ? 22 : 28, fontWeight: 700, letterSpacing: '-0.5px', marginBottom: 4 }}>Settings</h1>
-        <p style={{ color: '#64748b', fontSize: 14 }}>Customize your profile, goals and body stats</p>
+        <p style={{ color: 'var(--text-muted)', fontSize: 14 }}>Customize your profile, goals and body stats</p>
       </div>
 
       <Card style={{ marginBottom: 20 }}>
@@ -48,9 +50,9 @@ export default function Settings() {
         <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
           <div>
             <p style={{ fontSize: 14, color: '#94a3b8', marginBottom: 2 }}>Signed in as</p>
-            <p style={{ fontSize: 15, fontWeight: 500, color: '#e2e8f0' }}>{user?.email}</p>
+            <p style={{ fontSize: 15, fontWeight: 500, color: 'var(--text)' }}>{user?.email}</p>
           </div>
-          <button onClick={async () => { await signOut(); showToast('Signed out', 'info') }} style={{ background: 'transparent', border: '1px solid #2a2a3e', borderRadius: 8, padding: '8px 16px', color: '#64748b', fontSize: 14, cursor: 'pointer' }}>
+          <button onClick={async () => { await signOut(); showToast('Signed out', 'info') }} style={{ background: 'transparent', border: '1px solid #2a2a3e', borderRadius: 8, padding: '8px 16px', color: 'var(--text-muted)', fontSize: 14, cursor: 'pointer' }}>
             Sign out
           </button>
         </div>
@@ -88,7 +90,7 @@ export default function Settings() {
               <div style={{ display: 'flex', gap: 10 }}>
                 {(['male', 'female'] as const).map(g => (
                   <button key={g} type="button" onClick={() => setForm(f => ({ ...f, gender: g }))}
-                    style={{ flex: 1, padding: '9px 0', borderRadius: 8, border: '1px solid ' + (form.gender === g ? '#3b82f6' : '#2a2a3e'), background: form.gender === g ? '#1e3a8a22' : 'transparent', color: form.gender === g ? '#3b82f6' : '#64748b', fontWeight: 600, fontSize: 14, cursor: 'pointer' }}>
+                    style={{ flex: 1, padding: '9px 0', borderRadius: 8, border: '1px solid ' + (form.gender === g ? 'var(--accent)' : 'var(--border)'), background: form.gender === g ? '#1e3a8a22' : 'transparent', color: form.gender === g ? 'var(--accent)' : 'var(--text-muted)', fontWeight: 600, fontSize: 14, cursor: 'pointer' }}>
                     {g.charAt(0).toUpperCase() + g.slice(1)}
                   </button>
                 ))}
@@ -110,9 +112,7 @@ export default function Settings() {
               <label style={labelStyle}>
                 <span style={labelTextStyle}>Goal</span>
                 <select value={form.goalType} onChange={e => setForm(f => ({ ...f, goalType: e.target.value as GoalType }))} style={{ ...inputStyle, cursor: 'pointer' }}>
-                  <option value="lose">Lose Weight (-500 kcal)</option>
-                  <option value="maintain">Maintain Weight</option>
-                  <option value="gain">Gain Muscle (+300 kcal)</option>
+                  {GOAL_OPTIONS.map(o => <option key={o.value} value={o.value}>{o.label}</option>)}
                 </select>
               </label>
               <label style={labelStyle}>
@@ -121,7 +121,7 @@ export default function Settings() {
               </label>
             </div>
 
-            <div style={{ background: '#0f0f1a', border: '1px solid #2a2a3e', borderRadius: 10, padding: '14px 16px', marginTop: 4 }}>
+            <div style={{ background: 'var(--bg)', border: '1px solid #2a2a3e', borderRadius: 10, padding: '14px 16px', marginTop: 4 }}>
               <div style={{ display: 'grid', gridTemplateColumns: 'repeat(3, 1fr)', gap: 12, marginBottom: 14 }}>
                 {[
                   { label: 'BMR', value: bmr + ' kcal', sub: 'base metabolic rate' },
@@ -129,20 +129,20 @@ export default function Settings() {
                   { label: 'Target', value: targetCals + ' kcal', sub: 'daily calorie goal' },
                 ].map(({ label, value, sub }) => (
                   <div key={label} style={{ textAlign: 'center' }}>
-                    <p style={{ fontSize: 11, color: '#64748b', marginBottom: 2 }}>{label}</p>
-                    <p style={{ fontSize: isMobile ? 15 : 20, fontWeight: 700, color: '#3b82f6' }}>{value}</p>
-                    <p style={{ fontSize: 10, color: '#475569' }}>{sub}</p>
+                    <p style={{ fontSize: 11, color: 'var(--text-muted)', marginBottom: 2 }}>{label}</p>
+                    <p style={{ fontSize: isMobile ? 15 : 20, fontWeight: 700, color: 'var(--accent)' }}>{value}</p>
+                    <p style={{ fontSize: 10, color: 'var(--text-subtle)' }}>{sub}</p>
                   </div>
                 ))}
               </div>
               <div style={{ display: 'grid', gridTemplateColumns: 'repeat(3, 1fr)', gap: 8, marginBottom: 12 }}>
                 {[
                   { label: 'Protein', value: macros.protein, color: '#22c55e' },
-                  { label: 'Carbs', value: macros.carbs, color: '#3b82f6' },
+                  { label: 'Carbs', value: macros.carbs, color: 'var(--accent)' },
                   { label: 'Fat', value: macros.fat, color: '#a855f7' },
                 ].map(({ label, value, color }) => (
-                  <div key={label} style={{ background: '#13131f', borderRadius: 8, padding: '8px 10px', textAlign: 'center' }}>
-                    <p style={{ fontSize: 11, color: '#64748b', marginBottom: 2 }}>{label}</p>
+                  <div key={label} style={{ background: 'var(--card)', borderRadius: 8, padding: '8px 10px', textAlign: 'center' }}>
+                    <p style={{ fontSize: 11, color: 'var(--text-muted)', marginBottom: 2 }}>{label}</p>
                     <p style={{ fontSize: 18, fontWeight: 700, color }}>{value}g</p>
                   </div>
                 ))}
@@ -169,7 +169,7 @@ export default function Settings() {
               <label key={key} style={labelStyle}>
                 <div style={{ display: 'flex', justifyContent: 'space-between' }}>
                   <span style={labelTextStyle}>{label}</span>
-                  <span style={{ fontSize: 13, color: '#3b82f6', fontWeight: 600 }}>{form[key as keyof typeof form]} {unit}</span>
+                  <span style={{ fontSize: 13, color: 'var(--accent)', fontWeight: 600 }}>{form[key as keyof typeof form]} {unit}</span>
                 </div>
                 <input
                   type="range"
@@ -178,7 +178,7 @@ export default function Settings() {
                   step={step}
                   value={form[key as keyof typeof form] as number}
                   onChange={e => setForm(f => ({ ...f, [key]: Number(e.target.value) }))}
-                  style={{ width: '100%', accentColor: '#3b82f6', cursor: 'pointer' }}
+                  style={{ width: '100%', accentColor: 'var(--accent)', cursor: 'pointer' }}
                 />
                 <div style={{ display: 'flex', justifyContent: 'space-between', marginTop: 2 }}>
                   <span style={{ fontSize: 11, color: '#334155' }}>{min} {unit}</span>
@@ -191,11 +191,37 @@ export default function Settings() {
 
         <button
           type="submit"
-          style={{ background: '#3b82f6', color: '#fff', border: 'none', borderRadius: 10, padding: '13px 32px', fontSize: 15, fontWeight: 600, cursor: 'pointer', alignSelf: 'flex-start' }}
+          style={{ background: 'var(--accent)', color: '#fff', border: 'none', borderRadius: 10, padding: '13px 32px', fontSize: 15, fontWeight: 600, cursor: 'pointer', alignSelf: 'flex-start' }}
         >
           Save Changes
         </button>
       </form>
+
+      {/* Appearance — outside form, no submit needed */}
+      <Card style={{ marginTop: 20 }}>
+        <h2 style={sectionHeadStyle}>Appearance</h2>
+        <p style={{ fontSize: 13, color: 'var(--text-muted)', marginBottom: 16 }}>Choose your colour theme</p>
+        <div style={{ display: 'grid', gridTemplateColumns: 'repeat(3, 1fr)', gap: 12 }}>
+          {THEMES.map(t => (
+            <button
+              key={t.key}
+              type="button"
+              onClick={() => { setTheme(t.key); showToast(`Theme: ${t.label}`, 'info') }}
+              style={{
+                display: 'flex', flexDirection: 'column', alignItems: 'center', gap: 8,
+                padding: '14px 8px', borderRadius: 12,
+                border: `2px solid ${theme.key === t.key ? t.accent : 'var(--border)'}`,
+                background: t.bg, cursor: 'pointer', transition: 'border-color 0.15s',
+              }}
+            >
+              <div style={{ width: 36, height: 36, borderRadius: '50%', background: t.accent, display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
+                {theme.key === t.key && <span style={{ color: '#fff', fontSize: 16, fontWeight: 700 }}>✓</span>}
+              </div>
+              <span style={{ fontSize: 12, fontWeight: 600, color: t.text, textAlign: 'center', lineHeight: 1.3 }}>{t.label}</span>
+            </button>
+          ))}
+        </div>
+      </Card>
     </div>
   )
 }
@@ -207,7 +233,7 @@ const sectionHeadStyle: React.CSSProperties = {
 const labelStyle: React.CSSProperties = { display: 'flex', flexDirection: 'column', gap: 6 }
 const labelTextStyle: React.CSSProperties = { fontSize: 14, color: '#94a3b8', fontWeight: 500 }
 const inputStyle: React.CSSProperties = {
-  background: '#0f0f1a', border: '1px solid #2a2a3e', borderRadius: 8,
-  padding: '10px 14px', color: '#e2e8f0', fontSize: 15, outline: 'none',
+  background: 'var(--bg)', border: '1px solid #2a2a3e', borderRadius: 8,
+  padding: '10px 14px', color: 'var(--text)', fontSize: 15, outline: 'none',
   width: '100%', boxSizing: 'border-box',
 }
