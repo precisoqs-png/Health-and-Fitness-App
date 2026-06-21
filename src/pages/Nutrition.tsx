@@ -13,10 +13,12 @@ const emptyMealForm = { name: '', time: '' }
 const emptyCustomFood = { name: '', calories: '', protein: '', carbs: '', fat: '', servingSize: '100', category: 'Other' }
 
 export default function Nutrition() {
-  const { meals, addMeal, deleteMeal, profile, dailyLog, addWater, customFoods, addCustomFood, deleteCustomFood } = useApp()
+  const { meals, addMeal, deleteMeal, profile, dailyLog, addWater, customFoods, addCustomFood, deleteCustomFood, copyMealsForDay } = useApp()
   const { showToast } = useToast()
   const isMobile = useMobile()
   const [tab, setTab] = useState<Tab>('log')
+  const [showCopyDay, setShowCopyDay] = useState(false)
+  const [copyDayTarget, setCopyDayTarget] = useState('')
   const [showForm, setShowForm] = useState(false)
   const [mealForm, setMealForm] = useState(emptyMealForm)
   const [selectedItems, setSelectedItems] = useState<Array<{ food: FoodItem; grams: number; mode: 'g' | 'srv'; serves: number }>>([])
@@ -272,13 +274,59 @@ export default function Nutrition() {
                   </form>
                 </Card>
               ) : (
-                <button onClick={() => setShowForm(true)} style={{ background: 'transparent', border: '2px dashed #2a2a3e', borderRadius: 14, padding: 18, color: 'var(--text-subtle)', fontSize: 15, cursor: 'pointer', fontWeight: 500 }}>
-                  + Log a meal
-                </button>
+                <div style={{ display: 'flex', flexDirection: 'column', gap: 10 }}>
+                  <button onClick={() => setShowForm(true)} style={{ background: 'transparent', border: '2px dashed #2a2a3e', borderRadius: 14, padding: 18, color: 'var(--text-subtle)', fontSize: 15, cursor: 'pointer', fontWeight: 500 }}>
+                    + Log a meal
+                  </button>
+                  <button onClick={() => { setShowCopyDay(true); setCopyDayTarget('') }} style={{ background: 'transparent', border: '1px solid var(--border)', borderRadius: 10, padding: '10px 16px', color: 'var(--text-muted)', fontSize: 14, cursor: 'pointer', fontWeight: 500 }}>
+                    📋 Copy a day's meals
+                  </button>
+                </div>
               )}
             </div>
             {!isMobile && <div style={{ display: 'flex', flexDirection: 'column', gap: 16 }}>{summaryCard}{waterCard}</div>}
           </div>
+
+          {/* Copy Day Modal */}
+          {showCopyDay && (
+            <div onClick={() => setShowCopyDay(false)} style={{ position: 'fixed', inset: 0, background: 'rgba(0,0,0,0.6)', zIndex: 1000, display: 'flex', alignItems: 'center', justifyContent: 'center', padding: 16 }}>
+              <div onClick={e => e.stopPropagation()} style={{ background: 'var(--card)', border: '1px solid var(--border)', borderRadius: 16, maxWidth: 380, width: '100%', padding: 24 }}>
+                <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: 16 }}>
+                  <h3 style={{ fontSize: 16, fontWeight: 700, color: 'var(--text)' }}>Copy meals to…</h3>
+                  <button onClick={() => setShowCopyDay(false)} style={{ background: 'transparent', border: 'none', color: 'var(--text-muted)', fontSize: 22, cursor: 'pointer', lineHeight: 1 }}>×</button>
+                </div>
+                <p style={{ fontSize: 13, color: 'var(--text-subtle)', marginBottom: 16 }}>Copies all of today's logged meals to the selected date.</p>
+                <div style={{ display: 'flex', flexDirection: 'column', gap: 10, marginBottom: 16 }}>
+                  {[
+                    { label: 'Tomorrow', offset: 1 },
+                    { label: 'Yesterday', offset: -1 },
+                  ].map(({ label, offset }) => {
+                    const d = new Date(); d.setDate(d.getDate() + offset)
+                    const iso = d.toISOString().slice(0, 10)
+                    return (
+                      <button key={label} onClick={() => setCopyDayTarget(iso)}
+                        style={{ padding: '10px 16px', borderRadius: 10, border: `1px solid ${copyDayTarget === iso ? 'var(--accent)' : 'var(--border)'}`, background: copyDayTarget === iso ? '#1e3a8a22' : 'transparent', color: copyDayTarget === iso ? 'var(--accent)' : 'var(--text)', cursor: 'pointer', fontWeight: 500, fontSize: 14 }}>
+                        {label} ({iso})
+                      </button>
+                    )
+                  })}
+                  <div>
+                    <p style={{ fontSize: 12, color: '#94a3b8', marginBottom: 6 }}>Pick a date</p>
+                    <input type="date" value={copyDayTarget} onChange={e => setCopyDayTarget(e.target.value)}
+                      style={{ background: 'var(--bg)', border: '1px solid var(--border)', borderRadius: 8, padding: '10px 12px', color: 'var(--text)', fontSize: 14, outline: 'none', width: '100%', boxSizing: 'border-box' as const }} />
+                  </div>
+                </div>
+                <button onClick={() => {
+                  if (!copyDayTarget) { showToast('Select a target date', 'error'); return }
+                  copyMealsForDay(todayISO(), copyDayTarget)
+                  showToast('Day copied ✓')
+                  setShowCopyDay(false)
+                }} style={{ width: '100%', background: 'var(--accent)', color: '#fff', border: 'none', borderRadius: 10, padding: '12px 0', fontWeight: 600, fontSize: 15, cursor: 'pointer' }}>
+                  Copy Meals
+                </button>
+              </div>
+            </div>
+          )}
         </>
       )}
 

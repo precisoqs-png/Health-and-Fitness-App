@@ -51,6 +51,7 @@ export interface Profile {
   goalType: 'lose_fast' | 'lose' | 'lose_slow' | 'maintain' | 'gain'
   goalWeight: number   // kg
   currentWeight: number // kg
+  targetWeeks: number  // weeks to reach goal weight
 }
 
 export interface DailyLog {
@@ -136,6 +137,7 @@ interface AppState {
   addWeight: (weight: number) => void
   addCustomFood: (f: Omit<FoodItem, 'id' | 'isCustom'>) => void
   deleteCustomFood: (id: string) => void
+  copyMealsForDay: (fromDate: string, toDate: string) => void
   addProgram: (p: Omit<TrainingProgram, 'id' | 'createdAt'>) => void
   updateProgram: (id: string, p: TrainingProgram) => void
   deleteProgram: (id: string) => void
@@ -159,6 +161,7 @@ const defaultProfile: Profile = {
   goalType: 'lose',
   goalWeight: 80,
   currentWeight: 80,
+  targetWeeks: 12,
 }
 
 const defaultGoals: Goal[] = [
@@ -312,6 +315,17 @@ export function AppProvider({ children }: { children: ReactNode }) {
     setCustomFoods(prev => prev.filter(f => f.id !== id))
   }
 
+  function copyMealsForDay(fromDate: string, toDate: string) {
+    const source = meals.filter(m => m.date?.slice(0, 10) === fromDate)
+    if (source.length === 0) return
+    const copies = source.map(m => ({
+      ...m,
+      id: crypto.randomUUID(),
+      date: toDate + 'T' + (m.date?.slice(11) ?? '12:00:00.000Z'),
+    }))
+    setMeals(prev => [...prev, ...copies])
+  }
+
   function addProgram(p: Omit<TrainingProgram, 'id' | 'createdAt'>) {
     const newP: TrainingProgram = { ...p, id: crypto.randomUUID(), createdAt: new Date().toISOString() }
     setPrograms(prev => [...prev, newP])
@@ -347,7 +361,7 @@ export function AppProvider({ children }: { children: ReactNode }) {
       addWorkout, deleteWorkout, addMeal, deleteMeal,
       updateGoalProgress, addGoal, deleteGoal, updateProfile,
       addWater, setSteps, addWeight,
-      addCustomFood, deleteCustomFood,
+      addCustomFood, deleteCustomFood, copyMealsForDay,
       addProgram, updateProgram, deleteProgram, setActiveProgram,
       logDiaryEntry, deleteDiaryEntry,
     }}>

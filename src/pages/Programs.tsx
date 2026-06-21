@@ -1,10 +1,12 @@
-import { useState } from 'react'
+import { useState, useEffect } from 'react'
 import { useApp } from '../context/AppContext'
 import type { ProgramExercise, ProgramDay, ProgramWeek, TrainingProgram, DiarySet } from '../context/AppContext'
 import { useMobile } from '../hooks/useMobile'
 import { useToast } from '../context/ToastContext'
 import Card from '../components/Card'
-import { generateProgram, LIBRARY, EXERCISE_MUSCLE_MAP } from '../lib/programGenerator'
+import { generateProgram, needsFollowUp, LIBRARY, EXERCISE_MUSCLE_MAP } from '../lib/programGenerator'
+import type { FollowUpQuestion } from '../lib/programGenerator'
+import { todayISO } from '../context/AppContext'
 import { EXERCISE_DEMOS } from '../lib/exerciseDemos'
 
 type Tab = 'program' | 'build' | 'history'
@@ -160,6 +162,14 @@ export default function Programs() {
   const [aiPrompt, setAiPrompt] = useState('')
   const [aiLoading, setAiLoading] = useState(false)
   const [aiError, setAiError] = useState('')
+  const [thinking, setThinking] = useState(false)
+  const [followUpQs, setFollowUpQs] = useState<FollowUpQuestion[]>([])
+  const [followUpAnswers, setFollowUpAnswers] = useState<Record<string, string>>({})
+
+  // Diary date state
+  const [diaryDate, setDiaryDate] = useState<string>(() => {
+    try { return localStorage.getItem('vf_diary_date') || todayISO() } catch { return todayISO() }
+  })
 
   // Modal state
   const [demoExercise, setDemoExercise] = useState<string | null>(null)
@@ -179,18 +189,30 @@ export default function Programs() {
 
   const activeProgram = programs.find(p => p.id === activeProgramId) || programs[0] || null
 
+  useEffect(() => {
+    const id = setInterval(() => {
+      const today = todayISO()
+      setDiaryDate(prev => {
+        if (prev !== today) { localStorage.setItem('vf_diary_date', today); return today }
+        return prev
+      })
+    }, 60_000)
+    return () => clearInterval(id)
+  }, [])
+
   // ── AI generator ──────────────────────────────────────────────────────────
 
-  function handleGenerateProgram() {
-    if (!aiPrompt.trim()) { showToast('Describe the program you want', 'error'); return }
+  function doGenerate(prompt: string) {
     setAiLoading(true)
     setAiError('')
     setTimeout(() => {
       try {
-        const result = generateProgram(aiPrompt)
+        const result = generateProgram(prompt)
         addProgram({ name: result.name, weeks: result.weeks })
         showToast('Program generated ✓')
         setAiPrompt('')
+        setFollowUpQs([])
+        setFollowUpAnswers({})
         setTab('program')
       } catch (err) {
         setAiError(err instanceof Error ? err.message : 'Something went wrong')
@@ -198,6 +220,28 @@ export default function Programs() {
         setAiLoading(false)
       }
     }, 80)
+  }
+
+  function handleGenerateProgram() {
+    if (!aiPrompt.trim()) { showToast('Describe the program you want', 'error'); return }
+    setAiError('')
+    setFollowUpQs([])
+    setFollowUpAnswers({})
+    setThinking(true)
+    setTimeout(() => {
+      setThinking(false)
+      const qs = needsFollowUp(aiPrompt)
+      if (qs.length > 0) {
+        setFollowUpQs(qs)
+      } else {
+        doGenerate(aiPrompt)
+      }
+    }, 800)
+  }
+
+  function handleSubmitFollowUp() {
+    const extra = Object.entries(followUpAnswers).map(([k, v]) => `${k}: ${v}`).join(', ')
+    doGenerate(aiPrompt + (extra ? ' ' + extra : ''))
   }
 
   // ── Program editing ───────────────────────────────────────────────────────
@@ -495,12 +539,50 @@ export default function Programs() {
               Programs are suggestions only. Always consult a qualified fitness professional before starting a new training program, and use your own judgement.
             </p>
             {aiError && <p style={{ fontSize: 13, color: '#ef4444', marginBottom: 10 }}>{aiError}</p>}
-            <button onClick={handleGenerateProgram} disabled={aiLoading}
-              style={{ background: aiLoading ? '#1e3a8a88' : '#1e3a8a', color: '#93c5fd', border: '1px solid var(--accent)', borderRadius: 8, padding: '10px 20px', fontSize: 14, fontWeight: 600, cursor: aiLoading ? 'not-allowed' : 'pointer', display: 'flex', alignItems: 'center', gap: 8 }}>
-              {aiLoading
-                ? <><span style={{ display: 'inline-block', width: 14, height: 14, border: '2px solid #93c5fd', borderTopColor: 'transparent', borderRadius: '50%', animation: 'spin 0.7s linear infinite' }} />Generating…</>
-                : '✨ Generate Program'}
-            </button>
+
+            {thinking && (
+              <div style={{ display: 'flex', alignItems: 'center', gap: 10, padding: '10px 0', color: 'var(--text-muted)', fontSize: 14 }}>
+                <span style={{ display: 'inline-block', width: 14, height: 14, border: '2px solid var(--accent)', borderTopColor: 'transparent', borderRadius: '50%', animation: 'spin 0.7s linear infinite' }} />
+                Thinking…
+              </div>
+            )}
+
+            {!thinking && followUpQs.length > 0 && (
+              <div style={{ background: 'var(--bg)', border: '1px solid var(--border)', borderRadius: 10, padding: '14px 16px', marginBottom: 12 }}>
+                <p style={{ fontSize: 13, fontWeight: 600, color: 'var(--text)', marginBottom: 12 }}>A few quick questions to build a better program:</p>
+                <div style={{ display: 'flex', flexDirection: 'column', gap: 10 }}>
+                  {followUpQs.map(q => (
+                    <div key={q.key}>
+                      <p style={{ fontSize: 13, color: '#94a3b8', marginBottom: 4 }}>{q.label}</p>
+                      <input
+                        value={followUpAnswers[q.key] || ''}
+                        onChange={e => setFollowUpAnswers(prev => ({ ...prev, [q.key]: e.target.value }))}
+                        placeholder={q.placeholder}
+                        style={{ background: 'var(--card)', border: '1px solid var(--border)', borderRadius: 8, padding: '8px 12px', color: 'var(--text)', fontSize: 14, outline: 'none', width: '100%', boxSizing: 'border-box' as const }}
+                      />
+                    </div>
+                  ))}
+                </div>
+                <div style={{ display: 'flex', gap: 10, marginTop: 14 }}>
+                  <button onClick={handleSubmitFollowUp} disabled={aiLoading}
+                    style={{ background: aiLoading ? '#1e3a8a88' : '#1e3a8a', color: '#93c5fd', border: '1px solid var(--accent)', borderRadius: 8, padding: '10px 20px', fontSize: 14, fontWeight: 600, cursor: aiLoading ? 'not-allowed' : 'pointer', display: 'flex', alignItems: 'center', gap: 8 }}>
+                    {aiLoading ? <><span style={{ display: 'inline-block', width: 14, height: 14, border: '2px solid #93c5fd', borderTopColor: 'transparent', borderRadius: '50%', animation: 'spin 0.7s linear infinite' }} />Generating…</> : '✨ Generate Now'}
+                  </button>
+                  <button onClick={() => setFollowUpQs([])} style={{ background: 'transparent', border: '1px solid var(--border)', borderRadius: 8, padding: '10px 14px', color: 'var(--text-muted)', fontSize: 14, cursor: 'pointer' }}>
+                    Skip
+                  </button>
+                </div>
+              </div>
+            )}
+
+            {!thinking && followUpQs.length === 0 && (
+              <button onClick={handleGenerateProgram} disabled={aiLoading}
+                style={{ background: aiLoading ? '#1e3a8a88' : '#1e3a8a', color: '#93c5fd', border: '1px solid var(--accent)', borderRadius: 8, padding: '10px 20px', fontSize: 14, fontWeight: 600, cursor: aiLoading ? 'not-allowed' : 'pointer', display: 'flex', alignItems: 'center', gap: 8 }}>
+                {aiLoading
+                  ? <><span style={{ display: 'inline-block', width: 14, height: 14, border: '2px solid #93c5fd', borderTopColor: 'transparent', borderRadius: '50%', animation: 'spin 0.7s linear infinite' }} />Generating…</>
+                  : '✨ Generate Program'}
+              </button>
+            )}
           </Card>
 
           <div style={{ display: 'flex', alignItems: 'center', gap: 12, color: 'var(--text-subtle)', fontSize: 13 }}>
@@ -577,14 +659,31 @@ export default function Programs() {
       {/* ── DIARY TAB ── */}
       {tab === 'history' && (
         <div style={{ display: 'flex', flexDirection: 'column', gap: 12 }}>
-          {diary.length === 0 ? (
+          {/* Date navigation */}
+          <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 16, padding: '10px 0' }}>
+            <button onClick={() => {
+              const d = new Date(diaryDate); d.setDate(d.getDate() - 1)
+              const s = d.toISOString().slice(0, 10)
+              setDiaryDate(s); localStorage.setItem('vf_diary_date', s)
+            }} style={{ background: 'var(--card)', border: '1px solid var(--border)', borderRadius: 8, padding: '6px 12px', color: 'var(--text)', cursor: 'pointer', fontSize: 16 }}>←</button>
+            <span style={{ fontSize: 14, fontWeight: 600, color: 'var(--text)', minWidth: 160, textAlign: 'center' }}>
+              {new Date(diaryDate + 'T12:00:00').toLocaleDateString('en-AU', { weekday: 'short', day: 'numeric', month: 'short', year: 'numeric' })}
+            </span>
+            <button onClick={() => {
+              const d = new Date(diaryDate); d.setDate(d.getDate() + 1)
+              const s = d.toISOString().slice(0, 10)
+              if (s <= todayISO()) { setDiaryDate(s); localStorage.setItem('vf_diary_date', s) }
+            }} disabled={diaryDate >= todayISO()} style={{ background: 'var(--card)', border: '1px solid var(--border)', borderRadius: 8, padding: '6px 12px', color: diaryDate >= todayISO() ? 'var(--text-subtle)' : 'var(--text)', cursor: diaryDate >= todayISO() ? 'not-allowed' : 'pointer', fontSize: 16 }}>→</button>
+          </div>
+
+          {diary.filter(e => e.date.slice(0, 10) === diaryDate).length === 0 ? (
             <div style={{ textAlign: 'center', padding: '50px 20px', background: 'var(--card)', border: '1px solid var(--border)', borderRadius: 16 }}>
               <p style={{ fontSize: 40, marginBottom: 12 }}>📓</p>
-              <p style={{ fontSize: 15, fontWeight: 500, color: 'var(--text-muted)' }}>No sessions logged yet</p>
+              <p style={{ fontSize: 15, fontWeight: 500, color: 'var(--text-muted)' }}>No sessions on this day</p>
               <p style={{ fontSize: 13, color: 'var(--text-subtle)', marginTop: 6 }}>Log a session from the My Program tab to see it here.</p>
             </div>
           ) : (
-            diary.map(entry => (
+            diary.filter(e => e.date.slice(0, 10) === diaryDate).map(entry => (
               <Card key={entry.id}>
                 <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', marginBottom: 12 }}>
                   <div>

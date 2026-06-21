@@ -4,22 +4,26 @@ import { useAuth } from '../context/AuthContext'
 import { useToast } from '../context/ToastContext'
 import { useMobile } from '../hooks/useMobile'
 import Card from '../components/Card'
-import { calcBMR, calcTDEE, calcCalorieTarget, calcMacros, GOAL_OPTIONS } from '../lib/bmr'
+import { calcBMR, calcTDEE, calcMacros, GOAL_OPTIONS, calcDynamicCalorieTarget } from '../lib/bmr'
 import type { ActivityLevel, GoalType, Gender } from '../lib/bmr'
 import { useTheme, THEMES } from '../context/ThemeContext'
 
 export default function Settings() {
-  const { profile, updateProfile } = useApp()
+  const { profile, updateProfile, weightLog } = useApp()
   const { user, signOut } = useAuth()
   const { showToast } = useToast()
   const isMobile = useMobile()
   const { theme, setTheme } = useTheme()
   const [form, setForm] = useState({ ...profile })
 
-  const bmr = Math.round(calcBMR(form.currentWeight, form.height, form.age, form.gender as Gender))
+  const latestWeight = weightLog.length > 0 ? weightLog.sort((a, b) => b.date.localeCompare(a.date))[0] : null
+  const calcWeight = latestWeight ? latestWeight.weight : form.currentWeight
+
+  const bmr = Math.round(calcBMR(calcWeight, form.height, form.age, form.gender as Gender))
   const tdee = calcTDEE(bmr, form.activityLevel as ActivityLevel)
-  const targetCals = calcCalorieTarget(tdee, form.goalType as GoalType)
-  const macros = calcMacros(targetCals, form.currentWeight)
+  const dynTarget = calcDynamicCalorieTarget(tdee, calcWeight, form.goalWeight, form.targetWeeks || 12)
+  const targetCals = dynTarget.target
+  const macros = calcMacros(targetCals, calcWeight)
 
   async function handleSubmit(e: React.FormEvent) {
     e.preventDefault()
@@ -108,7 +112,7 @@ export default function Settings() {
               </select>
             </label>
 
-            <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 12 }}>
+            <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr 1fr', gap: 12 }}>
               <label style={labelStyle}>
                 <span style={labelTextStyle}>Goal</span>
                 <select value={form.goalType} onChange={e => setForm(f => ({ ...f, goalType: e.target.value as GoalType }))} style={{ ...inputStyle, cursor: 'pointer' }}>
@@ -118,6 +122,10 @@ export default function Settings() {
               <label style={labelStyle}>
                 <span style={labelTextStyle}>Goal Weight (kg)</span>
                 <input type="number" min={30} max={300} step={0.1} value={form.goalWeight} onChange={e => setForm(f => ({ ...f, goalWeight: Number(e.target.value) }))} style={inputStyle} />
+              </label>
+              <label style={labelStyle}>
+                <span style={labelTextStyle}>Reach goal in (weeks)</span>
+                <input type="number" min={1} max={104} value={form.targetWeeks || 12} onChange={e => setForm(f => ({ ...f, targetWeeks: Number(e.target.value) }))} style={inputStyle} />
               </label>
             </div>
 
@@ -134,6 +142,18 @@ export default function Settings() {
                     <p style={{ fontSize: 10, color: 'var(--text-subtle)' }}>{sub}</p>
                   </div>
                 ))}
+              </div>
+              <div style={{ background: 'var(--card)', borderRadius: 8, padding: '10px 14px', marginBottom: 12, fontSize: 13, color: 'var(--text)', lineHeight: 1.5 }}>
+                {dynTarget.weeklyChange > 0
+                  ? <>Target: <strong style={{ color: 'var(--accent)' }}>{targetCals.toLocaleString()} kcal/day</strong> to lose <strong style={{ color: 'var(--accent)' }}>{dynTarget.weeklyChange.toFixed(2)} kg/week</strong> and reach your goal in <strong style={{ color: 'var(--accent)' }}>{form.targetWeeks || 12} weeks</strong>{dynTarget.capped && <span style={{ color: '#f59e0b' }}> (floor applied — below minimum is unsafe)</span>}</>
+                  : dynTarget.weeklyChange < 0
+                  ? <>Target: <strong style={{ color: 'var(--accent)' }}>{targetCals.toLocaleString()} kcal/day</strong> to gain <strong style={{ color: 'var(--accent)' }}>{Math.abs(dynTarget.weeklyChange).toFixed(2)} kg/week</strong> over <strong style={{ color: 'var(--accent)' }}>{form.targetWeeks || 12} weeks</strong></>
+                  : <>Target: <strong style={{ color: 'var(--accent)' }}>{targetCals.toLocaleString()} kcal/day</strong> to maintain weight</>}
+                {latestWeight && (
+                  <p style={{ fontSize: 12, color: 'var(--text-muted)', marginTop: 4 }}>
+                    Based on your last weigh-in: {latestWeight.weight} kg on {new Date(latestWeight.date).toLocaleDateString('en-AU', { day: 'numeric', month: 'short', year: 'numeric' })}
+                  </p>
+                )}
               </div>
               <div style={{ display: 'grid', gridTemplateColumns: 'repeat(3, 1fr)', gap: 8, marginBottom: 12 }}>
                 {[
