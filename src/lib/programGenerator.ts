@@ -1,5 +1,27 @@
 import type { ProgramWeek } from '../context/AppContext'
 
+// ── Follow-up question helper ─────────────────────────────────────────────────
+
+export interface FollowUpQuestion { key: string; label: string; placeholder: string }
+
+export function needsFollowUp(prompt: string): FollowUpQuestion[] {
+  const p = prompt.toLowerCase().trim()
+  const questions: FollowUpQuestion[] = []
+
+  const hasWeeks = /\d+\s*[-\s]?week/.test(p)
+  const hasDays  = /\d+\s*[-\s]?(day|session|time)/.test(p)
+  const hasLevel = /beginner|novice|intermediate|advanced|experienced/.test(p)
+  const hasActivity = /run|marathon|cycl|swim|gym|strength|hypertrophy|muscle|fat.loss|push|pull|leg|chest|back|squat|bench/.test(p)
+
+  if (!hasWeeks) questions.push({ key: 'weeks',    label: 'How many weeks?',          placeholder: 'e.g. 8 or 12' })
+  if (!hasDays)  questions.push({ key: 'days',     label: 'How many days per week?',  placeholder: 'e.g. 3' })
+  if (!hasLevel) questions.push({ key: 'level',    label: 'Fitness level?',           placeholder: 'beginner / intermediate / advanced' })
+  // Only ask about goal if the prompt is vague (no clear activity)
+  if (!hasActivity && questions.length < 3) questions.push({ key: 'goal', label: 'What is your main goal?', placeholder: 'e.g. build muscle, lose fat, improve cardio' })
+
+  return questions.slice(0, 3)
+}
+
 // ── Types ─────────────────────────────────────────────────────────────────────
 
 type GoalKey = 'strength' | 'hypertrophy' | 'fatLoss'

@@ -39,3 +39,17 @@ export function calcMacros(calories: number, weightKg: number): { protein: numbe
   const carbs = Math.round((calories - protein * 4 - fat * 9) / 4)
   return { protein, carbs, fat: Math.max(fat, 20) }
 }
+
+export function calcDynamicCalorieTarget(
+  tdee: number,
+  currentWeight: number,
+  goalWeight: number,
+  targetWeeks: number,
+): { target: number; weeklyChange: number; capped: boolean } {
+  const weeklyWeightChange = (currentWeight - goalWeight) / Math.max(targetWeeks, 1)
+  const dailyDelta = (weeklyWeightChange * 7700) / 7
+  const raw = Math.round(tdee - dailyDelta)
+  const floor = 1300
+  const capped = raw < floor
+  return { target: capped ? floor : raw, weeklyChange: weeklyWeightChange, capped }
+}
