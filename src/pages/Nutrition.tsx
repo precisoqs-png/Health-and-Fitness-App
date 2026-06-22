@@ -209,7 +209,15 @@ export default function Nutrition() {
                   onEdit={() => {
                     setEditingMealId(meal.id)
                     setMealForm({ name: meal.name, time: meal.time })
-                    setSelectedItems([])
+                    const reconstructed = meal.items.flatMap(itemStr => {
+                      const match = itemStr.match(/^(.+) \((\d+)g\)$/)
+                      if (!match) return []
+                      const food = allFoods.find(f => f.name === match[1])
+                      if (!food) return []
+                      return [{ food, grams: Number(match[2]), mode: 'g' as const, serves: 1 }]
+                    })
+                    setSelectedItems(reconstructed)
+                    setFoodSearch('')
                     setShowForm(true)
                   }} />
               ))}
@@ -354,7 +362,7 @@ export default function Nutrition() {
 
       {/* HISTORY TAB */}
       {tab === 'history' && (() => {
-        const pastDates = Array.from({ length: 30 }, (_, i) => {
+        const pastDates = Array.from({ length: 90 }, (_, i) => {
           const d = new Date(); d.setDate(d.getDate() - i - 1)
           return d.toISOString().slice(0, 10)
         }).filter(date => meals.some(m => m.date?.slice(0, 10) === date))

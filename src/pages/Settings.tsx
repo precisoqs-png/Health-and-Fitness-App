@@ -31,14 +31,16 @@ export default function Settings() {
     showToast('Settings saved ✓')
   }
 
-  function applyCalculator() {
-    setForm(f => ({
-      ...f,
+  async function applyCalculator() {
+    const updated = {
+      ...form,
       dailyCalorieGoal: targetCals,
       proteinGoal: macros.protein,
       carbsGoal: macros.carbs,
       fatGoal: macros.fat,
-    }))
+    }
+    setForm(updated)
+    await updateProfile(updated)
     showToast('Goals updated from calculator ✓')
   }
 
