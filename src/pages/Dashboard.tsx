@@ -288,14 +288,14 @@ export default function Dashboard() {
           <h2 style={{ fontWeight: 600, fontSize: 15, marginBottom: 16 }}>🍽️ Today's Calorie & Macros</h2>
           <div style={{
             display: 'flex',
-            flexDirection: isMobile ? 'column' : 'row',
+            flexDirection: 'column',
             alignItems: 'center',
-            gap: isMobile ? 16 : 24,
+            gap: 20,
           }}>
-            {/* Large calorie ring */}
+            {/* Large calorie ring — top, centred */}
             <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', gap: 6 }}>
               {(() => {
-                const size = isMobile ? 100 : 130
+                const size = isMobile ? 110 : 140
                 const r = (size - 16) / 2
                 const circ = 2 * Math.PI * r
                 const pct = Math.min(1, calConsumed / Math.max(1, profile.dailyCalorieGoal))
@@ -309,7 +309,7 @@ export default function Dashboard() {
                         strokeLinecap="round" style={{ transition: 'stroke-dashoffset 0.6s ease' }} />
                     </svg>
                     <div style={{ position: 'absolute', inset: 0, display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center' }}>
-                      <span style={{ fontSize: isMobile ? 16 : 20, fontWeight: 700, color: 'var(--text)', lineHeight: 1.1 }}>{calConsumed.toLocaleString()}</span>
+                      <span style={{ fontSize: isMobile ? 18 : 22, fontWeight: 700, color: 'var(--text)', lineHeight: 1.1 }}>{calConsumed.toLocaleString()}</span>
                       <span style={{ fontSize: isMobile ? 11 : 12, color: 'var(--text-muted)' }}>kcal</span>
                     </div>
                   </div>
@@ -318,17 +318,16 @@ export default function Dashboard() {
               <span style={{ fontSize: 12, color: 'var(--text-muted)' }}>Calories</span>
             </div>
 
-            {/* 3 macro rings */}
+            {/* 3 macro rings — below, in a row, slightly smaller */}
             <div style={{
               display: 'flex',
               flexDirection: 'row',
-              gap: isMobile ? 16 : 24,
+              gap: isMobile ? 20 : 32,
               justifyContent: 'center',
-              flex: 1,
             }}>
-              <ProgressRing value={macrosConsumed.protein} goal={profile.proteinGoal} label="Protein" sublabel="g" color="#ef4444" size={isMobile ? 82 : 100} />
-              <ProgressRing value={macrosConsumed.carbs} goal={profile.carbsGoal} label="Carbs" sublabel="g" color="#f59e0b" size={isMobile ? 82 : 100} />
-              <ProgressRing value={macrosConsumed.fat} goal={profile.fatGoal} label="Fat" sublabel="g" color="#22c55e" size={isMobile ? 82 : 100} />
+              <ProgressRing value={macrosConsumed.protein} goal={profile.proteinGoal} label="Protein" sublabel="g" color="#ef4444" size={isMobile ? 76 : 90} />
+              <ProgressRing value={macrosConsumed.carbs} goal={profile.carbsGoal} label="Carbs" sublabel="g" color="#f59e0b" size={isMobile ? 76 : 90} />
+              <ProgressRing value={macrosConsumed.fat} goal={profile.fatGoal} label="Fat" sublabel="g" color="#22c55e" size={isMobile ? 76 : 90} />
             </div>
           </div>
 
