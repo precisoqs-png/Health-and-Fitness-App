@@ -52,6 +52,11 @@ export default function Dashboard() {
   const todayMeals = meals.filter(m => m.date?.slice(0, 10) === today)
   const calConsumed = todayMeals.reduce((s, m) => s + m.calories, 0)
   const calRemaining = profile.dailyCalorieGoal - calConsumed + caloriesBurned
+  const macrosConsumed = {
+    protein: todayMeals.reduce((s, m) => s + (m.protein ?? 0), 0),
+    carbs:   todayMeals.reduce((s, m) => s + (m.carbs ?? 0), 0),
+    fat:     todayMeals.reduce((s, m) => s + (m.fat ?? 0), 0),
+  }
 
   function handleWater(amt: number) {
     addWater(amt)
@@ -115,6 +120,23 @@ export default function Dashboard() {
             <div key={label} style={{ background: 'var(--bg)', borderRadius: 10, padding: isMobile ? '12px 6px' : '14px 8px' }}>
               <p style={{ fontSize: isMobile ? 18 : 22, fontWeight: 700, color }}>{value.toLocaleString()}</p>
               <p style={{ fontSize: 12, color: 'var(--text-muted)', marginTop: 2 }}>{label}</p>
+            </div>
+          ))}
+        </div>
+
+        {/* Macros row */}
+        <div style={{ display: 'grid', gridTemplateColumns: 'repeat(3, 1fr)', gap: 10, textAlign: 'center', marginTop: 12, paddingTop: 12, borderTop: '1px solid var(--border)' }}>
+          {[
+            { label: 'Protein', value: macrosConsumed.protein, goal: profile.proteinGoal, color: '#ef4444', unit: 'g' },
+            { label: 'Carbs',   value: macrosConsumed.carbs,   goal: profile.carbsGoal,   color: '#f59e0b', unit: 'g' },
+            { label: 'Fat',     value: macrosConsumed.fat,     goal: profile.fatGoal,     color: '#22c55e', unit: 'g' },
+          ].map(({ label, value, goal, color, unit }) => (
+            <div key={label} style={{ background: 'var(--bg)', borderRadius: 10, padding: isMobile ? '10px 6px' : '12px 8px' }}>
+              <p style={{ fontSize: isMobile ? 16 : 19, fontWeight: 700, color }}>{Math.round(value)}{unit}</p>
+              <p style={{ fontSize: 11, color: 'var(--text-muted)', marginTop: 2 }}>{label} <span style={{ color: 'var(--text-subtle)' }}>/ {goal}{unit}</span></p>
+              <div style={{ height: 3, background: 'var(--border)', borderRadius: 2, marginTop: 6, overflow: 'hidden' }}>
+                <div style={{ height: '100%', width: `${Math.min(100, Math.round(value / Math.max(1, goal) * 100))}%`, background: color, borderRadius: 2, transition: 'width 0.3s ease' }} />
+              </div>
             </div>
           ))}
         </div>
