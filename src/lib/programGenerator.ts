@@ -154,96 +154,178 @@ export function parsePrompt(prompt: string): ParsedPrompt {
 
 interface RunSession { name: string; sets: number; reps: string; restSecs: number }
 
-function kmStr(km: number) { return `~${Math.round(km)} km` }
-
 function buildRunningPlan(parsed: ParsedPrompt): { name: string; weeks: ProgramWeek[] } {
-  const { weeks, daysPerWeek, runTarget } = parsed
+  const { weeks: totalWeeks, daysPerWeek, runTarget, level } = parsed
 
-  // Starting long run distance and peak by target
-  const targets: Record<string, { start: number; peak: number; raceLabel: string }> = {
-    half_marathon: { start: 7,  peak: 20, raceLabel: 'Half Marathon' },
-    marathon:      { start: 10, peak: 32, raceLabel: 'Marathon'      },
-    '10k':         { start: 5,  peak: 12, raceLabel: '10K'           },
-    '5k':          { start: 3,  peak: 8,  raceLabel: '5K'            },
-    general:       { start: 5,  peak: 16, raceLabel: 'Running'       },
-  }
-  const t = targets[runTarget]
-
-  // Phase boundaries
-  const phase1End = Math.floor(weeks * 0.33)
-  const phase2End = Math.floor(weeks * 0.66)
-  const taperStart = weeks - 1 // last week = taper
-
-  // Long run progression across non-taper weeks
-  const peakWeek = taperStart - 1
-  const longRunByWeek = (w: number): number => {
-    if (w >= taperStart) return Math.round(t.peak * 0.5)
-    const progress = (w - 1) / Math.max(peakWeek - 1, 1)
-    return Math.round(t.start + (t.peak - t.start) * progress)
+  // Level-specific pace zones
+  const paceZones = {
+    easy:     level === 'beginner' ? '6:00–6:30/km' : level === 'advanced' ? '5:00–5:20/km' : '5:20–5:50/km',
+    tempo:    level === 'beginner' ? '5:30–5:55/km' : level === 'advanced' ? '4:20–4:40/km' : '4:50–5:10/km',
+    lt:       level === 'beginner' ? '5:10–5:30/km' : level === 'advanced' ? '4:10–4:25/km' : '4:35–4:55/km',
+    interval: level === 'beginner' ? '4:55–5:15/km' : level === 'advanced' ? '3:55–4:15/km' : '4:20–4:40/km',
+    race:     level === 'beginner' ? '5:45–6:10/km' : level === 'advanced' ? '4:30–4:45/km' : '5:00–5:20/km',
   }
 
-  // Tempo distance ~55% of long run, min 3km
-  const tempoByWeek = (w: number) => Math.max(3, Math.round(longRunByWeek(w) * 0.55))
-  // Easy run ~40% of long run
-  const easyByWeek = (w: number) => Math.max(3, Math.round(longRunByWeek(w) * 0.40))
+  const raceInfo: Record<string, { startLong: number; peakLong: number; label: string; dist: string }> = {
+    half_marathon: { startLong: 8,  peakLong: 19, label: 'Half Marathon', dist: '21.1 km' },
+    marathon:      { startLong: 14, peakLong: 32, label: 'Marathon',      dist: '42.2 km' },
+    '10k':         { startLong: 5,  peakLong: 12, label: '10K',           dist: '10 km'   },
+    '5k':          { startLong: 3,  peakLong: 8,  label: '5K',            dist: '5 km'    },
+    general:       { startLong: 6,  peakLong: 18, label: 'Running',       dist: 'goal'    },
+  }
+  const ri = raceInfo[runTarget] ?? raceInfo.general
 
-  const dayLayouts: Array<(w: number, phase: number) => RunSession[]> = []
+  // Week type helpers
+  const isRecovery = (w: number) => w % 4 === 0 && w < totalWeeks
+  const isTaper1   = (w: number) => totalWeeks >= 8 && w === totalWeeks - 1
+  const isTaper2   = (w: number) => totalWeeks >= 10 && w === totalWeeks - 2
+  const isRaceWk   = (w: number) => w === totalWeeks
 
-  // Build day session functions based on daysPerWeek
-  if (daysPerWeek <= 3) {
-    dayLayouts.push(
-      (w) => [{ name: 'Easy Run', sets: 1, reps: `${kmStr(easyByWeek(w))} at easy conversational pace (60–70% HR)`, restSecs: 0 }],
-      (w, ph) => ph < 2
-        ? [{ name: 'Tempo Run', sets: 1, reps: `${kmStr(tempoByWeek(w))} at comfortably hard pace (75–85% HR)`, restSecs: 0 }]
-        : [{ name: 'Interval Training', sets: 6, reps: '400 m at 90–95% effort', restSecs: 90 }],
-      (w) => [{ name: 'Long Run', sets: 1, reps: `${kmStr(longRunByWeek(w))} at easy pace (60–70% HR)`, restSecs: 0 }],
-    )
-  } else if (daysPerWeek === 4) {
-    dayLayouts.push(
-      (w)     => [{ name: 'Easy Run', sets: 1, reps: `${kmStr(easyByWeek(w))} at easy pace (60–70% HR)`, restSecs: 0 }],
-      (w, ph) => ph < 2
-        ? [{ name: 'Tempo Run', sets: 1, reps: `${kmStr(tempoByWeek(w))} at comfortably hard pace (75–85% HR)`, restSecs: 0 }]
-        : [{ name: 'Interval Training', sets: 6, reps: '400 m at 90–95% effort', restSecs: 90 }],
-      (w)     => [{ name: 'Easy Run', sets: 1, reps: `${kmStr(easyByWeek(w))} at easy pace`, restSecs: 0 }],
-      (w)     => [{ name: 'Long Run', sets: 1, reps: `${kmStr(longRunByWeek(w))} at easy pace (60–70% HR)`, restSecs: 0 }],
-    )
-  } else {
-    // 5+ days
-    dayLayouts.push(
-      (w)     => [{ name: 'Easy Run', sets: 1, reps: `${kmStr(easyByWeek(w))} easy`, restSecs: 0 }],
-      (w, ph) => ph < 1
-        ? [{ name: 'Tempo Run', sets: 1, reps: `${kmStr(tempoByWeek(w))} tempo`, restSecs: 0 }]
-        : [{ name: 'Interval Training', sets: 6, reps: '400 m at 90–95% effort', restSecs: 90 }],
-      (_w)    => [{ name: 'Recovery Run', sets: 1, reps: '20–30 min very easy jog', restSecs: 0 }],
-      (w)     => [{ name: 'Tempo Run', sets: 1, reps: `${kmStr(tempoByWeek(w))} tempo (75–85% HR)`, restSecs: 0 }],
-      (w)     => [{ name: 'Long Run', sets: 1, reps: `${kmStr(longRunByWeek(w))} at easy pace`, restSecs: 0 }],
-      (w)     => [{ name: 'Easy Run', sets: 1, reps: `${kmStr(easyByWeek(w))} easy`, restSecs: 0 }],
-      ()      => [{ name: 'Rest / Cross-Train', sets: 1, reps: 'Active recovery — walk, stretch, swim', restSecs: 0 }],
-    )
+  // Phase label per week
+  function phaseName(w: number): string {
+    if (isRaceWk(w))   return 'Race Week 🏁'
+    if (isTaper1(w))   return 'Taper — Wk 2'
+    if (isTaper2(w))   return 'Taper — Wk 1'
+    if (isRecovery(w)) return 'Recovery Week 🔄'
+    const pct = (w - 1) / Math.max(totalWeeks - 3, 1)
+    if (pct < 0.25) return 'Phase 1: Base Building'
+    if (pct < 0.5)  return 'Phase 2: Aerobic Development'
+    if (pct < 0.75) return 'Phase 3: Lactate Threshold'
+    return 'Phase 4: Race Pace Sharpening'
   }
 
-  const dayLabels = ['Mon', 'Wed', 'Fri', 'Sat', 'Sun', 'Tue', 'Thu']
-  const sessionLabels = ['Easy Run', 'Quality Session', 'Long Run', 'Easy Run', 'Quality Session', 'Long Run', 'Recovery']
+  // Phase index (for quality session type)
+  function phaseIdx(w: number): number {
+    if (isRaceWk(w))             return 4
+    if (isTaper1(w) || isTaper2(w)) return 3
+    if (isRecovery(w))           return -1
+    const pct = (w - 1) / Math.max(totalWeeks - 3, 1)
+    return pct < 0.25 ? 0 : pct < 0.5 ? 1 : pct < 0.75 ? 2 : 3
+  }
 
-  const weekData: ProgramWeek[] = Array.from({ length: weeks }, (_, wi) => {
-    const weekNumber = wi + 1
-    const phase = weekNumber <= phase1End ? 0 : weekNumber <= phase2End ? 1 : weekNumber < taperStart ? 2 : 3
+  // Build weeks (excludes recovery/taper/race) for long-run progression
+  const buildWks = Array.from({ length: totalWeeks }, (_, i) => i + 1)
+    .filter(w => !isRecovery(w) && !isTaper1(w) && !isTaper2(w) && !isRaceWk(w))
 
-    const days = Array.from({ length: daysPerWeek }, (__, di) => {
-      const sessions = (dayLayouts[di] || dayLayouts[0])(weekNumber, phase)
-      const phaseLabel = phase === 0 ? 'Base' : phase === 1 ? 'Build' : phase === 2 ? 'Peak' : 'Taper'
-      const sesLabel = sessionLabels[di] || `Session ${di + 1}`
-      return {
+  function longRunKm(w: number): number {
+    if (isRaceWk(w))  return Math.round(ri.peakLong * 0.28)
+    if (isTaper1(w))  return Math.round(ri.peakLong * 0.52)
+    if (isTaper2(w))  return Math.round(ri.peakLong * 0.65)
+    if (isRecovery(w)) return Math.round(longRunKm(w - 1) * 0.75)
+    const idx = buildWks.indexOf(w)
+    if (idx < 0) return ri.startLong
+    const progress = idx / Math.max(buildWks.length - 1, 1)
+    return Math.round(ri.startLong + (ri.peakLong - ri.startLong) * Math.min(1, progress))
+  }
+
+  function easyKm(w: number): number {
+    return Math.max(3, Math.round(longRunKm(w) * (isRecovery(w) ? 0.38 : 0.45)))
+  }
+
+  // Quality session — evolves each phase
+  function qualitySession(w: number): RunSession {
+    const ph = phaseIdx(w)
+    const lr = longRunKm(w)
+    if (isRaceWk(w)) return {
+      name: 'Pre-Race Shakeout', sets: 1,
+      reps: `20 min easy (${paceZones.easy}) + 6×100 m strides at race pace (${paceZones.race}) — save your legs for tomorrow`,
+      restSecs: 0,
+    }
+    if (isTaper1(w) || isTaper2(w)) return {
+      name: 'Race-Pace Run', sets: 3,
+      reps: `1 km at target race pace (${paceZones.race}) with 2 min easy recovery — stay sharp, not tired`,
+      restSecs: 120,
+    }
+    if (isRecovery(w)) return {
+      name: 'Easy Run + Strides', sets: 1,
+      reps: `${easyKm(w)} km easy (${paceZones.easy}) + 6×20 sec gentle strides — recovery week: keep it truly easy`,
+      restSecs: 0,
+    }
+    if (ph === 0) return { // Base Building — Fartlek
+      name: 'Fartlek Run', sets: 1,
+      reps: `${Math.max(4, Math.round(lr * 0.55))} km total — 1 km warm-up easy, then 8×1 min surges at ${paceZones.interval} (90 sec easy jog recovery), 1 km cool-down`,
+      restSecs: 0,
+    }
+    if (ph === 1) return { // Aerobic Development — Tempo
+      name: 'Continuous Tempo Run', sets: 1,
+      reps: `1.5 km easy warm-up + ${Math.max(3, Math.round(lr * 0.5))} km continuous at tempo pace (${paceZones.tempo}) + 1 km cool-down`,
+      restSecs: 0,
+    }
+    if (ph === 2) return { // Lactate Threshold — LT Intervals
+      name: 'Lactate Threshold Intervals',
+      sets: Math.min(5, 3 + Math.floor((w - totalWeeks * 0.5) / 2)),
+      reps: `1.2 km at LT pace (${paceZones.lt}) with 90 sec easy jog recovery between reps — controlled hard effort`,
+      restSecs: 90,
+    }
+    return { // Race Pace Sharpening
+      name: 'Race-Pace Intervals', sets: 4,
+      reps: `1.6 km at target race pace (${paceZones.race}) with 2 min walk/jog recovery — dial in exactly how race pace feels`,
+      restSecs: 120,
+    }
+  }
+
+  const dayKeys3    = ['Mon', 'Wed', 'Sat']
+  const dayKeys4    = ['Mon', 'Tue', 'Thu', 'Sat']
+  const dayKeys5p   = ['Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat', 'Sun']
+
+  const weekData: ProgramWeek[] = Array.from({ length: totalWeeks }, (_, wi) => {
+    const w = wi + 1
+    const lrKm = longRunKm(w)
+    const easyRunKm = easyKm(w)
+    const phLabel = phaseName(w)
+    const raceWk = isRaceWk(w)
+
+    const longRunSession: RunSession = {
+      name: raceWk ? 'Race Day 🏁' : isTaper1(w) ? 'Taper Long Run' : 'Long Run',
+      sets: 1,
+      reps: raceWk
+        ? `RACE DAY — ${ri.label} (${ri.dist}). Target pace: ${paceZones.race}. Trust the training — you're ready!`
+        : `${lrKm} km at easy long-run pace (${paceZones.easy}) — stay conversational; if you can't speak a sentence, slow down`,
+      restSecs: 0,
+    }
+
+    type DayDef = { day: string; sessionLabel: string; s: RunSession }
+    let days: DayDef[]
+
+    if (daysPerWeek <= 3) {
+      days = [
+        { day: dayKeys3[0], sessionLabel: 'Easy Run',        s: { name: 'Easy Run',     sets: 1, reps: `${easyRunKm} km easy (${paceZones.easy}) — RPE 4–5, keep it conversational`, restSecs: 0 } },
+        { day: dayKeys3[1], sessionLabel: 'Quality Session', s: qualitySession(w) },
+        { day: dayKeys3[2], sessionLabel: 'Long Run',        s: longRunSession },
+      ]
+    } else if (daysPerWeek === 4) {
+      days = [
+        { day: dayKeys4[0], sessionLabel: 'Easy Run',        s: { name: 'Easy Run',          sets: 1, reps: `${easyRunKm} km easy (${paceZones.easy})`, restSecs: 0 } },
+        { day: dayKeys4[1], sessionLabel: 'Quality Session', s: qualitySession(w) },
+        { day: dayKeys4[2], sessionLabel: 'Easy Recovery',   s: { name: 'Easy Recovery Run', sets: 1, reps: `${Math.max(3, easyRunKm - 2)} km very easy (${paceZones.easy}) — flush out Thursday fatigue`, restSecs: 0 } },
+        { day: dayKeys4[3], sessionLabel: 'Long Run',        s: longRunSession },
+      ]
+    } else {
+      days = [
+        { day: dayKeys5p[0], sessionLabel: 'Easy Run',         s: { name: 'Easy Run',               sets: 1, reps: `${easyRunKm} km easy (${paceZones.easy})`, restSecs: 0 } },
+        { day: dayKeys5p[1], sessionLabel: 'Quality Session',  s: qualitySession(w) },
+        { day: dayKeys5p[2], sessionLabel: 'Recovery Run',     s: { name: 'Recovery Run',            sets: 1, reps: `${Math.max(3, easyRunKm - 2)} km very easy jog — 30–60 sec/km slower than easy pace`, restSecs: 0 } },
+        { day: dayKeys5p[3], sessionLabel: 'Mid-Week Long',    s: { name: 'Midweek Medium-Long Run', sets: 1, reps: `${Math.round(lrKm * 0.68)} km at easy-to-moderate pace (${paceZones.easy})`, restSecs: 0 } },
+        { day: dayKeys5p[4], sessionLabel: 'Easy Run',         s: { name: 'Easy Run',               sets: 1, reps: `${Math.max(3, easyRunKm - 1)} km easy — light legs before Saturday`, restSecs: 0 } },
+        { day: dayKeys5p[5], sessionLabel: 'Long Run',         s: longRunSession },
+        { day: dayKeys5p[6], sessionLabel: 'Rest/Cross-Train', s: { name: 'Rest or Cross-Train',    sets: 1, reps: 'Swimming, cycling, yoga, or complete rest — zero running today, let muscles absorb the week', restSecs: 0 } },
+      ]
+    }
+
+    return {
+      weekNumber: w,
+      days: days.slice(0, daysPerWeek).map(({ day, sessionLabel, s }) => ({
         id: crypto.randomUUID(),
-        label: `${dayLabels[di]} – ${sesLabel} (Wk${weekNumber} ${phaseLabel})`,
-        exercises: sessions.map(s => ({ id: crypto.randomUUID(), ...s, notes: undefined })),
-      }
-    })
-    return { weekNumber, days }
+        label: `${day} – ${sessionLabel} [${phLabel}]`,
+        exercises: [{ id: crypto.randomUUID(), name: s.name, sets: s.sets, reps: s.reps, restSecs: s.restSecs, notes: undefined }],
+      })),
+    }
   })
 
-  const name = `${weeks}-Week ${t.raceLabel} Training Plan`
-  return { name, weeks: weekData }
+  return {
+    name: `${totalWeeks}-Week ${ri.label} Training Plan (${level.charAt(0).toUpperCase() + level.slice(1)})`,
+    weeks: weekData,
+  }
 }
 
 // ── Cycling plan builder ──────────────────────────────────────────────────────
@@ -423,19 +505,32 @@ function gymSets(base: number, weekNum: number, totalWeeks: number): number {
   return base + 2
 }
 
-function gymReps(base: string, weekNum: number, _goal: GoalKey): string {
+function gymReps(base: string, weekNum: number, goal: GoalKey): string {
   if (isGymDeload(weekNum)) {
-    const lo = base.split('-')[0]
-    return `${lo} reps @ 60% load (deload — focus on form)`
+    return `${base.split('–')[0].split('-')[0].trim()} reps @ RPE 6 — deload: 60% of normal load, prioritise form`
   }
   const rpe = Math.min(9, 6 + Math.floor(weekNum / 3))
-  if (base.includes('-')) {
-    const [lo, hi] = base.split('-').map(Number)
-    if (weekNum <= 3) return `${lo}–${hi} reps @ RPE ${rpe}`
-    if (weekNum <= 7) return `${lo + 1}–${hi + 1} reps @ RPE ${rpe}`
-    return `${lo + 2}–${hi + 2} reps @ RPE ${rpe}`
+  const blockNote = weekNum <= 3 ? 'establish baseline load'
+    : weekNum <= 6 ? '+2.5 kg vs Block 1'
+    : weekNum <= 9 ? '+5 kg vs Block 1'
+    : 'peak load — push to RPE 9'
+
+  if (goal === 'strength') {
+    const strongReps = weekNum <= 3 ? '5' : weekNum <= 6 ? '4–5' : weekNum <= 9 ? '3–4' : '1–3'
+    return `${strongReps} reps @ RPE ${rpe} (${blockNote})`
   }
-  return `${base} reps @ RPE ${rpe}`
+  if (goal === 'fatLoss') {
+    const restNote = weekNum <= 6 ? '45 sec rest' : '30 sec rest'
+    return `${base} reps @ RPE ${rpe} (${restNote} between sets — keep heart rate elevated)`
+  }
+  // Hypertrophy — keep rep range, increase load each block
+  if (base.includes('–') || base.includes('-')) {
+    const parts = base.replace('–', '-').split('-').map(s => Number(s.trim()))
+    const [lo, hi] = parts
+    if (weekNum > 9) return `${lo}–${Math.max(lo, hi - 2)} reps @ RPE ${rpe} (${blockNote} — heavier, fewer reps)`
+    return `${lo}–${hi} reps @ RPE ${rpe} (${blockNote})`
+  }
+  return `${base} reps @ RPE ${rpe} (${blockNote})`
 }
 
 function gymRest(base: number, weekNum: number, goal: GoalKey): number {
