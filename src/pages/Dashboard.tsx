@@ -40,12 +40,13 @@ function ProgressRing({ value, goal, label, sublabel, color, size = 110 }: {
 }
 
 // ── Drag handle ────────────────────────────────────────────────────────────────
-function DragHandle() {
+function DragHandle({ visible }: { visible: boolean }) {
+  if (!visible) return null
   return (
     <span style={{
-      display: 'inline-block', cursor: 'grab', color: 'var(--text-subtle)',
+      display: 'inline-block', cursor: 'grab', color: 'var(--accent)',
       fontSize: 16, lineHeight: 1, userSelect: 'none', marginRight: 8,
-      letterSpacing: 1,
+      letterSpacing: 1, opacity: 0.7,
     }} title="Drag to reorder">⠿</span>
   )
 }
@@ -105,6 +106,7 @@ export default function Dashboard() {
   const [editingSteps, setEditingSteps] = useState(false)
   const [stepsInput, setStepsInput] = useState('')
   const [customiseOpen, setCustomiseOpen] = useState(false)
+  const [moveMode, setMoveMode] = useState(false)
   const [widgets, setWidgets] = useState<typeof DEFAULT_WIDGETS>(() => {
     try {
       return { ...DEFAULT_WIDGETS, ...JSON.parse(localStorage.getItem('vf_dashboard_widgets') || '{}') }
@@ -246,6 +248,7 @@ export default function Dashboard() {
 
   // ── Drag wrapper helper ────────────────────────────────────────────────────
   function dragProps(key: string, mb: number = 20) {
+    if (!moveMode) return { style: { marginBottom: mb } }
     return {
       draggable: true as const,
       onDragStart: () => handleDragStart(key),
@@ -258,6 +261,7 @@ export default function Dashboard() {
         borderRadius: 16,
         transition: 'opacity 0.15s',
         marginBottom: mb,
+        cursor: 'grab',
       },
     }
   }
@@ -268,7 +272,7 @@ export default function Dashboard() {
       <div key="rings" {...dragProps('rings')}>
         <Card>
           <div style={{ display: 'flex', alignItems: 'center', marginBottom: 12 }}>
-            <DragHandle />
+            <DragHandle visible={moveMode} />
             <span style={{ fontWeight: 600, fontSize: 15 }}>Activity Stats</span>
           </div>
           <div style={{
@@ -298,7 +302,7 @@ export default function Dashboard() {
       <div key="calories" {...dragProps('calories')}>
         <Card>
           <div style={{ display: 'flex', alignItems: 'center', marginBottom: 16 }}>
-            <DragHandle />
+            <DragHandle visible={moveMode} />
             <h2 style={{ fontWeight: 600, fontSize: 15 }}>🍽️ Today's Calorie & Macros</h2>
           </div>
           <div style={{ maxWidth: 320, margin: '0 auto', width: '100%' }}>
@@ -360,7 +364,7 @@ export default function Dashboard() {
       <div key="weight" {...dragProps('weight')}>
         <Card>
           <div style={{ display: 'flex', alignItems: 'center', marginBottom: 12 }}>
-            <DragHandle />
+            <DragHandle visible={moveMode} />
             <h2 style={{ fontWeight: 600, fontSize: 15 }}>⚖️ Weight Progress</h2>
           </div>
           {!hasWeightData ? (
@@ -446,7 +450,7 @@ export default function Dashboard() {
         <div style={{ display: 'grid', gridTemplateColumns: isMobile ? '1fr' : '1fr 1fr', gap: 16 }}>
           <Card>
             <h2 style={{ fontWeight: 600, fontSize: 15, marginBottom: 12 }}>
-              <DragHandle />💧 Log Water
+              <DragHandle visible={moveMode} />💧 Log Water
             </h2>
             <div style={{ display: 'flex', gap: 8, flexWrap: 'wrap', marginBottom: 10 }}>
               {[0.25, 0.5, 0.75, 1].map(amt => (
@@ -491,7 +495,7 @@ export default function Dashboard() {
       <div key="weeklyActivity" {...dragProps('weeklyActivity')}>
         <Card>
           <div style={{ display: 'flex', alignItems: 'center', marginBottom: 14 }}>
-            <DragHandle />
+            <DragHandle visible={moveMode} />
             <h2 style={{ fontWeight: 600, fontSize: 15 }}>This Week's Activity</h2>
           </div>
           <div style={{ display: 'flex', flexDirection: 'column', gap: 8 }}>
@@ -516,7 +520,7 @@ export default function Dashboard() {
       <div key="weeklySummary" {...dragProps('weeklySummary')}>
         <Card>
           <div style={{ display: 'flex', alignItems: 'center', marginBottom: 14 }}>
-            <DragHandle />
+            <DragHandle visible={moveMode} />
             <h2 style={{ fontWeight: 600, fontSize: 15 }}>Weekly Summary</h2>
           </div>
           {[
@@ -572,24 +576,47 @@ export default function Dashboard() {
             <p style={{ marginTop: 6, fontSize: 14, color: 'var(--accent)' }}>🔥 {streak}-day streak — keep it going!</p>
           )}
         </div>
-        <button
-          onClick={() => setCustomiseOpen(o => !o)}
-          style={{
-            background: customiseOpen ? 'var(--accent-dim)' : 'var(--card)',
-            border: '1px solid var(--border)',
-            borderRadius: 8,
-            padding: '8px 14px',
-            color: customiseOpen ? 'var(--accent)' : 'var(--text-muted)',
-            fontSize: 13,
-            fontWeight: 600,
-            cursor: 'pointer',
-            flexShrink: 0,
-            marginTop: 4,
-          }}
-        >
-          ⚙️ Customise
-        </button>
+        <div style={{ display: 'flex', gap: 8, flexShrink: 0, marginTop: 4 }}>
+          <button
+            onClick={() => { setCustomiseOpen(o => !o); setMoveMode(false) }}
+            style={{
+              background: customiseOpen ? 'var(--accent-dim)' : 'var(--card)',
+              border: '1px solid var(--border)',
+              borderRadius: 8,
+              padding: '8px 14px',
+              color: customiseOpen ? 'var(--accent)' : 'var(--text-muted)',
+              fontSize: 13,
+              fontWeight: 600,
+              cursor: 'pointer',
+            }}
+          >
+            ⚙️ Customise
+          </button>
+          <button
+            onClick={() => { setMoveMode(o => !o); setCustomiseOpen(false) }}
+            style={{
+              background: moveMode ? 'var(--accent-dim)' : 'var(--card)',
+              border: `1px solid ${moveMode ? 'var(--accent)' : 'var(--border)'}`,
+              borderRadius: 8,
+              padding: '8px 14px',
+              color: moveMode ? 'var(--accent)' : 'var(--text-muted)',
+              fontSize: 13,
+              fontWeight: 600,
+              cursor: 'pointer',
+            }}
+          >
+            ↕ Move
+          </button>
+        </div>
       </div>
+
+      {/* Move mode banner */}
+      {moveMode && (
+        <div style={{ background: 'var(--accent-dim)', border: '1px solid var(--accent)', borderRadius: 10, padding: '10px 16px', marginBottom: 16, display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
+          <span style={{ fontSize: 13, color: 'var(--accent)', fontWeight: 500 }}>↕ Drag the <strong>⠿</strong> handle on any card to reorder</span>
+          <button onClick={() => setMoveMode(false)} style={{ background: 'transparent', border: 'none', color: 'var(--accent)', fontSize: 13, fontWeight: 600, cursor: 'pointer' }}>Done</button>
+        </div>
+      )}
 
       {/* Customise panel */}
       {customiseOpen && (
