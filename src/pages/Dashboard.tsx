@@ -15,7 +15,9 @@ function ProgressRing({ value, goal, label, sublabel, color, size = 110 }: {
   const circ = 2 * Math.PI * r
   const pct = Math.min(1, value / Math.max(1, goal))
   const offset = circ * (1 - pct)
-  const displayValue = typeof value === 'number' && value > 999 ? (value / 1000).toFixed(1) + 'k' : Math.round(value).toString()
+  const displayValue = Math.round(value).toString()
+  const displayGoal = Math.round(goal).toString()
+  const isSmall = size < 100
   return (
     <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', gap: 6 }}>
       <div style={{ position: 'relative', width: size, height: size }}>
@@ -25,13 +27,13 @@ function ProgressRing({ value, goal, label, sublabel, color, size = 110 }: {
             strokeDasharray={circ} strokeDashoffset={offset}
             strokeLinecap="round" style={{ transition: 'stroke-dashoffset 0.6s ease' }} />
         </svg>
-        <div style={{ position: 'absolute', inset: 0, display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center' }}>
-          <span style={{ fontSize: size >= 110 ? 14 : 12, fontWeight: 700, color: 'var(--text)', lineHeight: 1.1 }}>
-            {displayValue}
+        <div style={{ position: 'absolute', inset: 0, display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', gap: 1 }}>
+          <span style={{ fontSize: isSmall ? 11 : 13, fontWeight: 700, color: 'var(--text)', lineHeight: 1.1 }}>
+            {displayValue}{sublabel}
           </span>
-          {sublabel && (
-            <span style={{ fontSize: size >= 110 ? 11 : 10, color: 'var(--text-muted)', lineHeight: 1.2 }}>{sublabel}</span>
-          )}
+          <span style={{ fontSize: isSmall ? 9 : 10, color: 'var(--text-muted)', lineHeight: 1.1 }}>
+            / {displayGoal}{sublabel}
+          </span>
         </div>
       </div>
       <span style={{ fontSize: 11, color: 'var(--text-muted)', textAlign: 'center' }}>{label}</span>
@@ -328,9 +330,9 @@ export default function Dashboard() {
                           strokeDasharray={circ} strokeDashoffset={offset}
                           strokeLinecap="round" style={{ transition: 'stroke-dashoffset 0.6s ease' }} />
                       </svg>
-                      <div style={{ position: 'absolute', inset: 0, display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center' }}>
-                        <span style={{ fontSize: isMobile ? 18 : 22, fontWeight: 700, color: 'var(--text)', lineHeight: 1.1 }}>{calConsumed.toLocaleString()}</span>
-                        <span style={{ fontSize: isMobile ? 11 : 12, color: 'var(--text-muted)' }}>kcal</span>
+                      <div style={{ position: 'absolute', inset: 0, display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', gap: 2 }}>
+                        <span style={{ fontSize: isMobile ? 15 : 18, fontWeight: 700, color: 'var(--text)', lineHeight: 1.1 }}>{calConsumed.toLocaleString()}kcal</span>
+                        <span style={{ fontSize: isMobile ? 10 : 11, color: 'var(--text-muted)', lineHeight: 1.1 }}>/ {profile.dailyCalorieGoal.toLocaleString()}kcal</span>
                       </div>
                     </div>
                   )
