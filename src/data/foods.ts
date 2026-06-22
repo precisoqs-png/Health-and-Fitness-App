@@ -8,6 +8,7 @@ export interface FoodItem {
   servingSize: number // default serving in grams
   category: string
   isCustom?: boolean
+  serveNote?: string  // e.g. "1 piece = 150g"
 }
 
 export const BUILT_IN_FOODS: FoodItem[] = [

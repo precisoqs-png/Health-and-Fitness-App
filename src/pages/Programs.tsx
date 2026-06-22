@@ -173,6 +173,8 @@ export default function Programs() {
   const [diaryDate, setDiaryDate] = useState<string>(() => {
     try { return localStorage.getItem('vf_diary_date') || todayISO() } catch { return todayISO() }
   })
+  const [diaryView, setDiaryView] = useState<'log' | 'progression'>('log')
+  const [progressionExIdx, setProgressionExIdx] = useState(0)
 
   // Modal state
   const [demoExercise, setDemoExercise] = useState<string | null>(null)
@@ -670,69 +672,257 @@ export default function Programs() {
       {/* ── DIARY TAB ── */}
       {tab === 'history' && (
         <div style={{ display: 'flex', flexDirection: 'column', gap: 12 }}>
-          {/* Date navigation */}
-          <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 16, padding: '10px 0' }}>
-            <button onClick={() => {
-              const d = new Date(diaryDate); d.setDate(d.getDate() - 1)
-              const s = d.toISOString().slice(0, 10)
-              setDiaryDate(s); localStorage.setItem('vf_diary_date', s)
-            }} style={{ background: 'var(--card)', border: '1px solid var(--border)', borderRadius: 8, padding: '6px 12px', color: 'var(--text)', cursor: 'pointer', fontSize: 16 }}>←</button>
-            <span style={{ fontSize: 14, fontWeight: 600, color: 'var(--text)', minWidth: 160, textAlign: 'center' }}>
-              {new Date(diaryDate + 'T12:00:00').toLocaleDateString('en-AU', { weekday: 'short', day: 'numeric', month: 'short', year: 'numeric' })}
-            </span>
-            <button onClick={() => {
-              const d = new Date(diaryDate); d.setDate(d.getDate() + 1)
-              const s = d.toISOString().slice(0, 10)
-              if (s <= todayISO()) { setDiaryDate(s); localStorage.setItem('vf_diary_date', s) }
-            }} disabled={diaryDate >= todayISO()} style={{ background: 'var(--card)', border: '1px solid var(--border)', borderRadius: 8, padding: '6px 12px', color: diaryDate >= todayISO() ? 'var(--text-subtle)' : 'var(--text)', cursor: diaryDate >= todayISO() ? 'not-allowed' : 'pointer', fontSize: 16 }}>→</button>
+          {/* View toggle + date navigation */}
+          <div style={{ display: 'flex', flexDirection: 'column', gap: 10 }}>
+            {/* View toggle */}
+            <div style={{ display: 'flex', justifyContent: 'center', gap: 8 }}>
+              <button
+                onClick={() => setDiaryView('log')}
+                style={{ background: diaryView === 'log' ? 'var(--accent)' : 'var(--card)', border: '1px solid var(--border)', borderRadius: 8, padding: '6px 16px', color: diaryView === 'log' ? '#fff' : 'var(--text-muted)', fontSize: 13, fontWeight: 600, cursor: 'pointer' }}
+              >
+                📅 Log
+              </button>
+              <button
+                onClick={() => setDiaryView('progression')}
+                style={{ background: diaryView === 'progression' ? 'var(--accent)' : 'var(--card)', border: '1px solid var(--border)', borderRadius: 8, padding: '6px 16px', color: diaryView === 'progression' ? '#fff' : 'var(--text-muted)', fontSize: 13, fontWeight: 600, cursor: 'pointer' }}
+              >
+                📈 Progression
+              </button>
+            </div>
+
+            {/* Date navigation — only shown in log view */}
+            {diaryView === 'log' && (
+              <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 16, padding: '4px 0' }}>
+                <button onClick={() => {
+                  const d = new Date(diaryDate); d.setDate(d.getDate() - 1)
+                  const s = d.toISOString().slice(0, 10)
+                  setDiaryDate(s); localStorage.setItem('vf_diary_date', s)
+                }} style={{ background: 'var(--card)', border: '1px solid var(--border)', borderRadius: 8, padding: '6px 12px', color: 'var(--text)', cursor: 'pointer', fontSize: 16 }}>←</button>
+                <span style={{ fontSize: 14, fontWeight: 600, color: 'var(--text)', minWidth: 160, textAlign: 'center' }}>
+                  {new Date(diaryDate + 'T12:00:00').toLocaleDateString('en-AU', { weekday: 'short', day: 'numeric', month: 'short', year: 'numeric' })}
+                </span>
+                <button onClick={() => {
+                  const d = new Date(diaryDate); d.setDate(d.getDate() + 1)
+                  const s = d.toISOString().slice(0, 10)
+                  if (s <= todayISO()) { setDiaryDate(s); localStorage.setItem('vf_diary_date', s) }
+                }} disabled={diaryDate >= todayISO()} style={{ background: 'var(--card)', border: '1px solid var(--border)', borderRadius: 8, padding: '6px 12px', color: diaryDate >= todayISO() ? 'var(--text-subtle)' : 'var(--text)', cursor: diaryDate >= todayISO() ? 'not-allowed' : 'pointer', fontSize: 16 }}>→</button>
+              </div>
+            )}
           </div>
 
-          {diary.filter(e => e.date.slice(0, 10) === diaryDate).length === 0 ? (
-            <div style={{ textAlign: 'center', padding: '50px 20px', background: 'var(--card)', border: '1px solid var(--border)', borderRadius: 16 }}>
-              <p style={{ fontSize: 40, marginBottom: 12 }}>📓</p>
-              <p style={{ fontSize: 15, fontWeight: 500, color: 'var(--text-muted)' }}>No sessions on this day</p>
-              <p style={{ fontSize: 13, color: 'var(--text-subtle)', marginTop: 6 }}>Log a session from the My Program tab to see it here.</p>
-            </div>
-          ) : (
-            diary.filter(e => e.date.slice(0, 10) === diaryDate).map(entry => (
-              <Card key={entry.id}>
-                <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', marginBottom: 12 }}>
-                  <div>
-                    <p style={{ fontWeight: 700, fontSize: 15, color: 'var(--text)' }}>{entry.dayLabel}</p>
-                    <p style={{ fontSize: 12, color: 'var(--text-subtle)', marginTop: 2 }}>
-                      Week {entry.weekNumber} · {new Date(entry.date).toLocaleDateString('en-AU', { weekday: 'short', day: 'numeric', month: 'short' })}
-                    </p>
-                  </div>
-                  <div style={{ display: 'flex', alignItems: 'center', gap: 10 }}>
-                    <div style={{ textAlign: 'right' }}>
-                      <p style={{ fontSize: 18, fontWeight: 700, color: 'var(--accent)' }}>{totalVolume(entry).toLocaleString()}</p>
-                      <p style={{ fontSize: 11, color: 'var(--text-muted)' }}>kg volume</p>
+          {/* Log view */}
+          {diaryView === 'log' && (
+            diary.filter(e => e.date.slice(0, 10) === diaryDate).length === 0 ? (
+              <div style={{ textAlign: 'center', padding: '50px 20px', background: 'var(--card)', border: '1px solid var(--border)', borderRadius: 16 }}>
+                <p style={{ fontSize: 40, marginBottom: 12 }}>📓</p>
+                <p style={{ fontSize: 15, fontWeight: 500, color: 'var(--text-muted)' }}>No sessions on this day</p>
+                <p style={{ fontSize: 13, color: 'var(--text-subtle)', marginTop: 6 }}>Log a session from the My Program tab to see it here.</p>
+              </div>
+            ) : (
+              diary.filter(e => e.date.slice(0, 10) === diaryDate).map(entry => (
+                <Card key={entry.id}>
+                  <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', marginBottom: 12 }}>
+                    <div>
+                      <p style={{ fontWeight: 700, fontSize: 15, color: 'var(--text)' }}>{entry.dayLabel}</p>
+                      <p style={{ fontSize: 12, color: 'var(--text-subtle)', marginTop: 2 }}>
+                        Week {entry.weekNumber} · {new Date(entry.date).toLocaleDateString('en-AU', { weekday: 'short', day: 'numeric', month: 'short' })}
+                      </p>
                     </div>
-                    <button onClick={() => { deleteDiaryEntry(entry.id); showToast('Entry deleted', 'info') }}
-                      style={{ background: 'transparent', border: '1px solid var(--border)', borderRadius: 6, padding: '5px 10px', color: 'var(--text-muted)', fontSize: 12, cursor: 'pointer' }}>
-                      Delete
-                    </button>
-                  </div>
-                </div>
-                {(() => {
-                  const byEx: Record<string, typeof entry.sets> = {}
-                  entry.sets.forEach(s => { byEx[s.exerciseName] = [...(byEx[s.exerciseName] || []), s] })
-                  return Object.entries(byEx).map(([name, sets]) => (
-                    <div key={name} style={{ marginBottom: 10 }}>
-                      <p style={{ fontWeight: 600, fontSize: 13, color: '#94a3b8', marginBottom: 6 }}>{name}</p>
-                      <div style={{ display: 'flex', flexWrap: 'wrap', gap: 6 }}>
-                        {sets.map((s, i) => (
-                          <span key={i} style={{ background: 'var(--bg)', border: '1px solid var(--border)', borderRadius: 6, padding: '4px 10px', fontSize: 13, color: 'var(--text)' }}>
-                            {s.repsCompleted} × {s.weightKg}kg
-                          </span>
-                        ))}
+                    <div style={{ display: 'flex', alignItems: 'center', gap: 10 }}>
+                      <div style={{ textAlign: 'right' }}>
+                        <p style={{ fontSize: 18, fontWeight: 700, color: 'var(--accent)' }}>{totalVolume(entry).toLocaleString()}</p>
+                        <p style={{ fontSize: 11, color: 'var(--text-muted)' }}>kg volume</p>
                       </div>
+                      <button onClick={() => { deleteDiaryEntry(entry.id); showToast('Entry deleted', 'info') }}
+                        style={{ background: 'transparent', border: '1px solid var(--border)', borderRadius: 6, padding: '5px 10px', color: 'var(--text-muted)', fontSize: 12, cursor: 'pointer' }}>
+                        Delete
+                      </button>
                     </div>
-                  ))
-                })()}
-              </Card>
-            ))
+                  </div>
+                  {(() => {
+                    const byEx: Record<string, typeof entry.sets> = {}
+                    entry.sets.forEach(s => { byEx[s.exerciseName] = [...(byEx[s.exerciseName] || []), s] })
+                    return Object.entries(byEx).map(([name, sets]) => (
+                      <div key={name} style={{ marginBottom: 10 }}>
+                        <p style={{ fontWeight: 600, fontSize: 13, color: '#94a3b8', marginBottom: 6 }}>{name}</p>
+                        <div style={{ display: 'flex', flexWrap: 'wrap', gap: 6 }}>
+                          {sets.map((s, i) => (
+                            <span key={i} style={{ background: 'var(--bg)', border: '1px solid var(--border)', borderRadius: 6, padding: '4px 10px', fontSize: 13, color: 'var(--text)' }}>
+                              {s.repsCompleted} × {s.weightKg}kg
+                            </span>
+                          ))}
+                        </div>
+                      </div>
+                    ))
+                  })()}
+                </Card>
+              ))
+            )
           )}
+
+          {/* Progression view */}
+          {diaryView === 'progression' && (() => {
+            if (diary.length === 0) {
+              return (
+                <div style={{ textAlign: 'center', padding: '50px 20px', background: 'var(--card)', border: '1px solid var(--border)', borderRadius: 16 }}>
+                  <p style={{ fontSize: 40, marginBottom: 12 }}>📓</p>
+                  <p style={{ fontSize: 15, fontWeight: 500, color: 'var(--text-muted)' }}>No sessions logged yet</p>
+                  <p style={{ fontSize: 13, color: 'var(--text-subtle)', marginTop: 6 }}>Log a session from the My Program tab to see it here.</p>
+                </div>
+              )
+            }
+
+            // Build per-exercise history
+            const allExercises: Record<string, Array<{ date: string; weekNumber: number; sets: DiarySet[] }>> = {}
+            diary.forEach(entry => {
+              entry.sets.forEach(set => {
+                if (!allExercises[set.exerciseName]) allExercises[set.exerciseName] = []
+                const existing = allExercises[set.exerciseName].find(e => e.date === entry.date && e.weekNumber === entry.weekNumber)
+                if (existing) {
+                  existing.sets.push(set)
+                } else {
+                  allExercises[set.exerciseName].push({ date: entry.date, weekNumber: entry.weekNumber, sets: [set] })
+                }
+              })
+            })
+            const exerciseNames = Object.keys(allExercises).sort()
+            exerciseNames.forEach(name => allExercises[name].sort((a, b) => a.date.localeCompare(b.date)))
+
+            const clampedIdx = Math.min(progressionExIdx, exerciseNames.length - 1)
+            const currentName = exerciseNames[clampedIdx]
+            const sessions = allExercises[currentName]
+
+            // Determine if bodyweight (all weights 0)
+            const allBodyweight = sessions.every(s => s.sets.every(set => set.weightKg === 0))
+            // Max value per session: max weight or max reps if bodyweight
+            const sessionMaxValues = sessions.map(s =>
+              allBodyweight
+                ? Math.max(...s.sets.map(set => set.repsCompleted))
+                : Math.max(...s.sets.map(set => set.weightKg))
+            )
+
+            // Summary bar text
+            const summaryText = sessions.length === 1
+              ? 'Log this exercise again next week to track progression'
+              : (() => {
+                  const first = sessionMaxValues[0]
+                  const latest = sessionMaxValues[sessionMaxValues.length - 1]
+                  const pct = first === 0 ? 0 : ((latest - first) / first) * 100
+                  const sign = pct >= 0 ? '+' : ''
+                  const unit = allBodyweight ? 'reps' : 'kg'
+                  return `First: ${first} ${unit} → Latest: ${latest} ${unit} (${sign}${pct.toFixed(1)}% over ${sessions.length} sessions)`
+                })()
+
+            // SVG chart dimensions
+            const vbW = 300, vbH = 120
+            const padL = 30, padR = 20, padT = 20, padB = 24
+            const chartW = vbW - padL - padR
+            const chartH = vbH - padT - padB
+
+            const minVal = Math.min(...sessionMaxValues)
+            const maxVal = Math.max(...sessionMaxValues)
+            const valRange = maxVal === minVal ? 1 : maxVal - minVal
+
+            const toX = (i: number) => sessions.length === 1
+              ? padL + chartW / 2
+              : padL + (i / (sessions.length - 1)) * chartW
+            const toY = (v: number) => padT + chartH - ((v - minVal) / valRange) * chartH
+
+            const points = sessionMaxValues.map((v, i) => `${toX(i)},${toY(v)}`).join(' ')
+
+            // Y-axis labels
+            const yMid = (minVal + maxVal) / 2
+            const unit = allBodyweight ? 'reps' : 'kg'
+
+            return (
+              <div style={{ display: 'flex', flexDirection: 'column', gap: 12 }}>
+                {/* Exercise selector */}
+                <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 12 }}>
+                  <button
+                    onClick={() => setProgressionExIdx((clampedIdx - 1 + exerciseNames.length) % exerciseNames.length)}
+                    style={{ background: 'var(--card)', border: '1px solid var(--border)', borderRadius: 8, padding: '6px 12px', color: 'var(--text)', cursor: 'pointer', fontSize: 16 }}
+                  >←</button>
+                  <span style={{ fontSize: 14, fontWeight: 600, color: 'var(--text)', textAlign: 'center', minWidth: 180 }}>
+                    {currentName} ({clampedIdx + 1} of {exerciseNames.length})
+                  </span>
+                  <button
+                    onClick={() => setProgressionExIdx((clampedIdx + 1) % exerciseNames.length)}
+                    style={{ background: 'var(--card)', border: '1px solid var(--border)', borderRadius: 8, padding: '6px 12px', color: 'var(--text)', cursor: 'pointer', fontSize: 16 }}
+                  >→</button>
+                </div>
+
+                <Card>
+                  {/* Summary bar */}
+                  <p style={{ fontSize: 12, color: 'var(--text-muted)', marginBottom: 12, textAlign: 'center' }}>{summaryText}</p>
+
+                  {/* SVG line chart */}
+                  <svg viewBox={`0 0 ${vbW} ${vbH}`} style={{ width: '100%', height: 'auto', display: 'block' }}>
+                    {/* Grid lines */}
+                    {[minVal, yMid, maxVal].map((v, i) => (
+                      <line key={i} x1={padL} y1={toY(v)} x2={padL + chartW} y2={toY(v)}
+                        stroke="var(--border)" strokeWidth={0.5} />
+                    ))}
+                    {/* Y-axis labels */}
+                    {[minVal, yMid, maxVal].map((v, i) => (
+                      <text key={i} x={padL - 4} y={toY(v) + 4} textAnchor="end"
+                        fontSize={8} fill="var(--text-muted)">
+                        {Number.isInteger(v) ? v : v.toFixed(1)}
+                      </text>
+                    ))}
+                    {/* Unit label */}
+                    <text x={padL - 4} y={padT - 6} textAnchor="end" fontSize={7} fill="var(--text-subtle)">{unit}</text>
+                    {/* X-axis labels */}
+                    {sessions.map((_, i) => (
+                      <text key={i} x={toX(i)} y={vbH - 4} textAnchor="middle"
+                        fontSize={8} fill="var(--text-muted)">
+                        {i + 1}
+                      </text>
+                    ))}
+                    {/* Line */}
+                    {sessions.length > 1 && (
+                      <polyline points={points} fill="none" stroke="var(--accent)" strokeWidth={1.5} strokeLinejoin="round" strokeLinecap="round" />
+                    )}
+                    {/* Dots */}
+                    {sessionMaxValues.map((v, i) => (
+                      <circle key={i} cx={toX(i)} cy={toY(v)} r={3} fill="var(--accent)">
+                        <title>{`Session ${i + 1}: ${v} ${unit}`}</title>
+                      </circle>
+                    ))}
+                  </svg>
+
+                  {/* Entry list */}
+                  <div style={{ marginTop: 12, display: 'flex', flexDirection: 'column', gap: 6 }}>
+                    {sessions.map((session, i) => {
+                      const firstSet = session.sets[0]
+                      const setCount = session.sets.length
+                      const prevMax = i > 0 ? sessionMaxValues[i - 1] : null
+                      const currMax = sessionMaxValues[i]
+                      const diff = prevMax !== null ? currMax - prevMax : null
+                      const dateLabel = new Date(session.date + 'T12:00:00').toLocaleDateString('en-AU', { weekday: 'short', day: 'numeric', month: 'short' })
+                      return (
+                        <div key={i} style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', padding: '8px 0', borderBottom: i < sessions.length - 1 ? '1px solid var(--border)' : 'none' }}>
+                          <div style={{ display: 'flex', gap: 10, alignItems: 'center' }}>
+                            <span style={{ fontSize: 12, color: 'var(--text-muted)', minWidth: 80 }}>{dateLabel}</span>
+                            <span style={{ fontSize: 11, color: 'var(--text-subtle)' }}>Week {session.weekNumber}</span>
+                          </div>
+                          <div style={{ display: 'flex', gap: 8, alignItems: 'center' }}>
+                            <span style={{ fontSize: 12, color: 'var(--text)' }}>
+                              {setCount} × {firstSet.repsCompleted} × {firstSet.weightKg} kg
+                            </span>
+                            {diff !== null && (
+                              <span style={{ fontSize: 11, fontWeight: 600, color: diff > 0 ? '#22c55e' : diff < 0 ? '#ef4444' : 'var(--text-muted)' }}>
+                                {diff > 0 ? `↑ +${diff}` : diff < 0 ? `↓ ${diff}` : '–'} {unit}
+                              </span>
+                            )}
+                          </div>
+                        </div>
+                      )
+                    })}
+                  </div>
+                </Card>
+              </div>
+            )
+          })()}
         </div>
       )}
     </div>

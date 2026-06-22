@@ -8,13 +8,14 @@ import Card from '../components/Card'
 const DAYS = ['Sun', 'Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat']
 
 // ── Progress Ring ──────────────────────────────────────────────────────────────
-function ProgressRing({ value, goal, label, icon, color, size = 110 }: {
-  value: number; goal: number; label: string; icon: string; color: string; size?: number
+function ProgressRing({ value, goal, label, sublabel, color, size = 110 }: {
+  value: number; goal: number; label: string; sublabel?: string; color: string; size?: number
 }) {
   const r = (size - 16) / 2
   const circ = 2 * Math.PI * r
   const pct = Math.min(1, value / Math.max(1, goal))
   const offset = circ * (1 - pct)
+  const displayValue = typeof value === 'number' && value > 999 ? (value / 1000).toFixed(1) + 'k' : Math.round(value).toString()
   return (
     <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', gap: 6 }}>
       <div style={{ position: 'relative', width: size, height: size }}>
@@ -25,10 +26,12 @@ function ProgressRing({ value, goal, label, icon, color, size = 110 }: {
             strokeLinecap="round" style={{ transition: 'stroke-dashoffset 0.6s ease' }} />
         </svg>
         <div style={{ position: 'absolute', inset: 0, display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center' }}>
-          <span style={{ fontSize: 11 }}>{icon}</span>
-          <span style={{ fontSize: 13, fontWeight: 700, color: 'var(--text)', lineHeight: 1.1 }}>
-            {typeof value === 'number' && value > 999 ? (value / 1000).toFixed(1) + 'k' : value}
+          <span style={{ fontSize: size >= 110 ? 14 : 12, fontWeight: 700, color: 'var(--text)', lineHeight: 1.1 }}>
+            {displayValue}
           </span>
+          {sublabel && (
+            <span style={{ fontSize: size >= 110 ? 11 : 10, color: 'var(--text-muted)', lineHeight: 1.2 }}>{sublabel}</span>
+          )}
         </div>
       </div>
       <span style={{ fontSize: 11, color: 'var(--text-muted)', textAlign: 'center' }}>{label}</span>
@@ -40,7 +43,6 @@ function ProgressRing({ value, goal, label, icon, color, size = 110 }: {
 const DEFAULT_WIDGETS = {
   rings: true,
   calories: true,
-  macros: true,
   weight: true,
   quickActions: true,
   weeklyActivity: true,
@@ -49,9 +51,8 @@ const DEFAULT_WIDGETS = {
 type WidgetKey = keyof typeof DEFAULT_WIDGETS
 
 const WIDGET_LABELS: Record<WidgetKey, string> = {
-  rings: 'Progress Rings',
-  calories: 'Calorie Balance',
-  macros: 'Macros',
+  rings: 'Activity Stats',
+  calories: 'Calorie & Macros',
   weight: 'Weight Tracker',
   quickActions: 'Quick Actions',
   weeklyActivity: 'Weekly Activity',
@@ -191,8 +192,6 @@ export default function Dashboard() {
     ? [0]
     : [0, Math.floor((weightEntries.length - 1) / 2), weightEntries.length - 1]
 
-  const ringSize = isMobile ? 90 : 110
-
   return (
     <div style={{ maxWidth: 1200, margin: '0 auto', padding: isMobile ? '24px 16px' : '40px 24px' }}>
 
@@ -258,53 +257,85 @@ export default function Dashboard() {
         </Card>
       )}
 
-      {/* Progress Rings */}
+      {/* Activity Stats — simple stat cards */}
       {widgets.rings && (
         <Card style={{ marginBottom: 20 }}>
-          <div style={{ display: 'flex', justifyContent: 'space-around', flexWrap: 'wrap', gap: 16, padding: '8px 0' }}>
-            <ProgressRing value={dailyLog.steps} goal={profile.dailyStepGoal} label="Steps" icon="👟" color="var(--accent)" size={ringSize} />
-            <ProgressRing value={caloriesBurned} goal={700} label="Calories Burned" icon="🔥" color="#ef4444" size={ringSize} />
-            <ProgressRing value={activeMinutes} goal={60} label="Active Minutes" icon="⏱️" color="#22c55e" size={ringSize} />
-            <ProgressRing value={parseFloat(dailyLog.water.toFixed(1))} goal={profile.waterGoal} label="Water (L)" icon="💧" color="#3b82f6" size={ringSize} />
+          <div style={{
+            display: 'grid',
+            gridTemplateColumns: isMobile ? '1fr 1fr' : 'repeat(4, 1fr)',
+            gap: 12,
+          }}>
+            {[
+              { icon: '👟', value: dailyLog.steps.toLocaleString(), label: 'Steps', goal: `${dailyLog.steps.toLocaleString()} of ${profile.dailyStepGoal.toLocaleString()} goal` },
+              { icon: '🔥', value: caloriesBurned.toLocaleString(), label: 'Calories Burned', goal: `${caloriesBurned} of 700 goal` },
+              { icon: '⏱️', value: activeMinutes.toString(), label: 'Active Minutes', goal: `${activeMinutes} of 60 goal` },
+              { icon: '💧', value: parseFloat(dailyLog.water.toFixed(2)).toString() + 'L', label: 'Water', goal: `${dailyLog.water.toFixed(2)}L of ${profile.waterGoal}L goal` },
+            ].map(({ icon, value, label, goal }) => (
+              <div key={label} style={{ background: 'var(--bg)', borderRadius: 10, padding: '16px', textAlign: 'center' }}>
+                <div style={{ fontSize: 22, marginBottom: 6 }}>{icon}</div>
+                <p style={{ fontSize: isMobile ? 20 : 24, fontWeight: 700, color: 'var(--text)', lineHeight: 1.1, marginBottom: 4 }}>{value}</p>
+                <p style={{ fontSize: 12, fontWeight: 600, color: 'var(--text-muted)', marginBottom: 4 }}>{label}</p>
+                <p style={{ fontSize: 11, color: 'var(--text-subtle)' }}>{goal}</p>
+              </div>
+            ))}
           </div>
         </Card>
       )}
 
-      {/* Calorie balance */}
+      {/* Calorie & Macro rings */}
       {widgets.calories && (
         <Card style={{ marginBottom: 20 }}>
-          <h2 style={{ fontWeight: 600, fontSize: 15, marginBottom: 14 }}>🍽️ Today's Calorie Balance</h2>
-          <div style={{ display: 'grid', gridTemplateColumns: 'repeat(3, 1fr)', gap: 10, textAlign: 'center' }}>
-            {[
-              { label: 'Goal', value: profile.dailyCalorieGoal, color: '#94a3b8' },
-              { label: 'Consumed', value: calConsumed, color: 'var(--accent)' },
-              { label: 'Remaining', value: calRemaining, color: calRemaining >= 0 ? '#22c55e' : '#ef4444' },
-            ].map(({ label, value, color }) => (
-              <div key={label} style={{ background: 'var(--bg)', borderRadius: 10, padding: isMobile ? '12px 6px' : '14px 8px' }}>
-                <p style={{ fontSize: isMobile ? 18 : 22, fontWeight: 700, color }}>{value.toLocaleString()}</p>
-                <p style={{ fontSize: 12, color: 'var(--text-muted)', marginTop: 2 }}>{label}</p>
-              </div>
-            ))}
+          <h2 style={{ fontWeight: 600, fontSize: 15, marginBottom: 16 }}>🍽️ Today's Calorie & Macros</h2>
+          <div style={{
+            display: 'flex',
+            flexDirection: isMobile ? 'column' : 'row',
+            alignItems: 'center',
+            gap: isMobile ? 16 : 24,
+          }}>
+            {/* Large calorie ring */}
+            <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', gap: 6 }}>
+              {(() => {
+                const size = isMobile ? 100 : 130
+                const r = (size - 16) / 2
+                const circ = 2 * Math.PI * r
+                const pct = Math.min(1, calConsumed / Math.max(1, profile.dailyCalorieGoal))
+                const offset = circ * (1 - pct)
+                return (
+                  <div style={{ position: 'relative', width: size, height: size }}>
+                    <svg width={size} height={size} style={{ transform: 'rotate(-90deg)' }}>
+                      <circle cx={size / 2} cy={size / 2} r={r} fill="none" stroke="var(--border)" strokeWidth={10} />
+                      <circle cx={size / 2} cy={size / 2} r={r} fill="none" stroke="#a855f7" strokeWidth={10}
+                        strokeDasharray={circ} strokeDashoffset={offset}
+                        strokeLinecap="round" style={{ transition: 'stroke-dashoffset 0.6s ease' }} />
+                    </svg>
+                    <div style={{ position: 'absolute', inset: 0, display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center' }}>
+                      <span style={{ fontSize: isMobile ? 16 : 20, fontWeight: 700, color: 'var(--text)', lineHeight: 1.1 }}>{calConsumed.toLocaleString()}</span>
+                      <span style={{ fontSize: isMobile ? 11 : 12, color: 'var(--text-muted)' }}>kcal</span>
+                    </div>
+                  </div>
+                )
+              })()}
+              <span style={{ fontSize: 12, color: 'var(--text-muted)' }}>Calories</span>
+            </div>
+
+            {/* 3 macro rings */}
+            <div style={{
+              display: 'flex',
+              flexDirection: 'row',
+              gap: isMobile ? 16 : 24,
+              justifyContent: 'center',
+              flex: 1,
+            }}>
+              <ProgressRing value={macrosConsumed.protein} goal={profile.proteinGoal} label="Protein" sublabel="g" color="#ef4444" size={isMobile ? 82 : 100} />
+              <ProgressRing value={macrosConsumed.carbs} goal={profile.carbsGoal} label="Carbs" sublabel="g" color="#f59e0b" size={isMobile ? 82 : 100} />
+              <ProgressRing value={macrosConsumed.fat} goal={profile.fatGoal} label="Fat" sublabel="g" color="#22c55e" size={isMobile ? 82 : 100} />
+            </div>
           </div>
 
-          {/* Macros row */}
-          {widgets.macros && (
-            <div style={{ display: 'grid', gridTemplateColumns: 'repeat(3, 1fr)', gap: 10, textAlign: 'center', marginTop: 12, paddingTop: 12, borderTop: '1px solid var(--border)' }}>
-              {[
-                { label: 'Protein', value: macrosConsumed.protein, goal: profile.proteinGoal, color: '#ef4444', unit: 'g' },
-                { label: 'Carbs',   value: macrosConsumed.carbs,   goal: profile.carbsGoal,   color: '#f59e0b', unit: 'g' },
-                { label: 'Fat',     value: macrosConsumed.fat,     goal: profile.fatGoal,     color: '#22c55e', unit: 'g' },
-              ].map(({ label, value, goal, color, unit }) => (
-                <div key={label} style={{ background: 'var(--bg)', borderRadius: 10, padding: isMobile ? '10px 6px' : '12px 8px' }}>
-                  <p style={{ fontSize: isMobile ? 16 : 19, fontWeight: 700, color }}>{Math.round(value)}{unit}</p>
-                  <p style={{ fontSize: 11, color: 'var(--text-muted)', marginTop: 2 }}>{label} <span style={{ color: 'var(--text-subtle)' }}>/ {goal}{unit}</span></p>
-                  <div style={{ height: 3, background: 'var(--border)', borderRadius: 2, marginTop: 6, overflow: 'hidden' }}>
-                    <div style={{ height: '100%', width: `${Math.min(100, Math.round(value / Math.max(1, goal) * 100))}%`, background: color, borderRadius: 2, transition: 'width 0.3s ease' }} />
-                  </div>
-                </div>
-              ))}
-            </div>
-          )}
+          {/* Remaining calories line */}
+          <p style={{ textAlign: 'center', fontSize: 13, marginTop: 14, color: calRemaining >= 0 ? '#22c55e' : '#ef4444' }}>
+            {calRemaining >= 0 ? calRemaining.toLocaleString() : Math.abs(calRemaining).toLocaleString()} kcal {calRemaining >= 0 ? 'remaining' : 'over goal'} today
+          </p>
         </Card>
       )}
 

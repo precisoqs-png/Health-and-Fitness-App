@@ -1,4 +1,4 @@
-import { useState, useMemo } from 'react'
+import { useState, useMemo, useEffect, useRef } from 'react'
 import { useToast } from '../context/ToastContext'
 import { useApp, todayISO } from '../context/AppContext'
 import type { FoodItem } from '../context/AppContext'
@@ -10,7 +10,7 @@ import { BUILT_IN_FOODS } from '../data/foods'
 type Tab = 'log' | 'history' | 'database' | 'myfoods'
 
 const emptyMealForm = { name: '', time: '' }
-const emptyCustomFood = { name: '', calories: '', protein: '', carbs: '', fat: '', servingSize: '100', category: 'Other' }
+const emptyCustomFood = { name: '', calories: '', protein: '', carbs: '', fat: '', servingSize: '100', category: 'Other', serveNote: '' }
 
 export default function Nutrition() {
   const { meals, addMeal, deleteMeal, updateMeal, profile, dailyLog, addWater, customFoods, addCustomFood, deleteCustomFood, copyMealsForDay } = useApp()
@@ -28,6 +28,9 @@ export default function Nutrition() {
   const [customFoodForm, setCustomFoodForm] = useState(emptyCustomFood)
   const [dbSearch, setDbSearch] = useState('')
   const [dbCategory, setDbCategory] = useState('All')
+  const [apiResults, setApiResults] = useState<FoodItem[]>([])
+  const [apiFetching, setApiFetching] = useState(false)
+  const apiTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null)
 
   const todayMeals = meals.filter(m => m.date?.slice(0, 10) === todayISO())
   const totalCalories = todayMeals.reduce((s, m) => s + m.calories, 0)
@@ -38,11 +41,53 @@ export default function Nutrition() {
 
   const allFoods = useMemo(() => [...BUILT_IN_FOODS, ...customFoods], [customFoods])
 
-  const searchResults = useMemo(() => {
+  const localResults = useMemo(() => {
     if (!foodSearch.trim()) return []
     const q = foodSearch.toLowerCase()
-    return allFoods.filter(f => f.name.toLowerCase().includes(q)).slice(0, 8)
+    return allFoods.filter(f => f.name.toLowerCase().includes(q)).slice(0, 6)
   }, [foodSearch, allFoods])
+
+  useEffect(() => {
+    if (foodSearch.trim().length < 3) { setApiResults([]); setApiFetching(false); return }
+    if (apiTimerRef.current) clearTimeout(apiTimerRef.current)
+    apiTimerRef.current = setTimeout(async () => {
+      setApiFetching(true)
+      try {
+        const url = `https://world.openfoodfacts.org/cgi/search.pl?search_terms=${encodeURIComponent(foodSearch.trim())}&search_simple=1&action=process&json=true&page_size=20&fields=product_name,nutriments,serving_size`
+        const res = await fetch(url)
+        if (!res.ok) throw new Error('API error')
+        const data = await res.json()
+        const mapped: FoodItem[] = (data.products ?? [])
+          .filter((p: Record<string, unknown>) => p.product_name && (p.nutriments as Record<string, number>)?.['energy-kcal_100g'])
+          .map((p: Record<string, unknown>) => {
+            const n = p.nutriments as Record<string, number>
+            return {
+              id: 'off_' + Math.random().toString(36).slice(2),
+              name: String(p.product_name),
+              calories: Math.round(n['energy-kcal_100g'] ?? 0),
+              protein: Math.round((n['proteins_100g'] ?? 0) * 10) / 10,
+              carbs: Math.round((n['carbohydrates_100g'] ?? 0) * 10) / 10,
+              fat: Math.round((n['fat_100g'] ?? 0) * 10) / 10,
+              servingSize: Math.round(Number(p.serving_size) || 100),
+              category: 'API',
+            }
+          })
+          .filter((f: FoodItem) => !localResults.some(l => l.name.toLowerCase() === f.name.toLowerCase()))
+          .slice(0, 8)
+        setApiResults(mapped)
+      } catch {
+        setApiResults([])
+      } finally {
+        setApiFetching(false)
+      }
+    }, 400)
+  }, [foodSearch, localResults])
+
+  const searchResults = useMemo(() => {
+    if (!foodSearch.trim()) return []
+    const combined = [...localResults, ...apiResults]
+    return combined.slice(0, 12)
+  }, [localResults, apiResults, foodSearch])
 
   // Calculated totals from selected items
   function effG({ food, grams, mode, serves }: typeof selectedItems[0]) {
@@ -101,6 +146,7 @@ export default function Nutrition() {
       fat: Number(customFoodForm.fat) || 0,
       servingSize: Number(customFoodForm.servingSize) || 100,
       category: customFoodForm.category,
+      serveNote: customFoodForm.serveNote || undefined,
     })
     setCustomFoodForm(emptyCustomFood)
     setShowCustomFoodForm(false)
@@ -236,15 +282,27 @@ export default function Nutrition() {
                       <input placeholder="Search food database..." value={foodSearch} onChange={e => setFoodSearch(e.target.value)}
                         style={{ ...inputStyle, paddingLeft: 36 }} />
                       <span style={{ position: 'absolute', left: 12, top: '50%', transform: 'translateY(-50%)', color: 'var(--text-subtle)', fontSize: 14 }}>🔍</span>
-                      {searchResults.length > 0 && (
-                        <div style={{ position: 'absolute', top: '100%', left: 0, right: 0, background: 'var(--card)', border: '1px solid #2a2a3e', borderRadius: 8, zIndex: 50, maxHeight: 220, overflowY: 'auto', marginTop: 4 }}>
+                      {(searchResults.length > 0 || apiFetching) && (
+                        <div style={{ position: 'absolute', top: '100%', left: 0, right: 0, background: 'var(--card)', border: '1px solid #2a2a3e', borderRadius: 8, zIndex: 50, maxHeight: 260, overflowY: 'auto', marginTop: 4 }}>
+                          {apiFetching && searchResults.length === 0 && (
+                            <div style={{ padding: '12px 14px', color: 'var(--text-muted)', fontSize: 13 }}>Searching food database…</div>
+                          )}
                           {searchResults.map(food => (
                             <button key={food.id} type="button" onClick={() => addFoodToMeal(food)}
-                              style={{ width: '100%', display: 'flex', justifyContent: 'space-between', padding: '10px 14px', background: 'transparent', border: 'none', borderBottom: '1px solid #1e1e2e', color: 'var(--text)', cursor: 'pointer', textAlign: 'left', fontSize: 14 }}>
-                              <span>{food.name}{food.isCustom ? ' ★' : ''}</span>
-                              <span style={{ color: 'var(--text-muted)', fontSize: 13 }}>{food.calories} kcal/100g</span>
+                              style={{ width: '100%', display: 'flex', justifyContent: 'space-between', alignItems: 'center', padding: '10px 14px', background: 'transparent', border: 'none', borderBottom: '1px solid #1e1e2e', color: 'var(--text)', cursor: 'pointer', textAlign: 'left', fontSize: 14, gap: 8 }}>
+                              <div>
+                                <span>{food.name}{food.isCustom ? ' ★' : ''}</span>
+                                {food.serveNote && <span style={{ display: 'block', fontSize: 11, color: 'var(--text-subtle)', marginTop: 1 }}>{food.serveNote}</span>}
+                              </div>
+                              <div style={{ display: 'flex', alignItems: 'center', gap: 6, flexShrink: 0 }}>
+                                {food.category === 'API' && <span style={{ fontSize: 10, background: 'rgba(99,102,241,0.15)', color: '#818cf8', borderRadius: 4, padding: '1px 5px' }}>OFF</span>}
+                                <span style={{ color: 'var(--text-muted)', fontSize: 13 }}>{food.calories} kcal/100g</span>
+                              </div>
                             </button>
                           ))}
+                          {apiFetching && searchResults.length > 0 && (
+                            <div style={{ padding: '8px 14px', color: 'var(--text-subtle)', fontSize: 12 }}>Loading more…</div>
+                          )}
                         </div>
                       )}
                     </div>
@@ -443,7 +501,7 @@ export default function Nutrition() {
                 <div>
                   <p style={{ fontWeight: 600, fontSize: 15, color: 'var(--text)' }}>{food.name} <span style={{ fontSize: 12, color: 'var(--accent)' }}>★ custom</span></p>
                   <p style={{ fontSize: 13, color: 'var(--text-muted)', marginTop: 2 }}>per 100g — {food.calories} kcal · P:{food.protein}g C:{food.carbs}g F:{food.fat}g</p>
-                  <p style={{ fontSize: 12, color: 'var(--text-subtle)', marginTop: 1 }}>Default serving: {food.servingSize}g · {food.category}</p>
+                  <p style={{ fontSize: 12, color: 'var(--text-subtle)', marginTop: 1 }}>Default serving: {food.servingSize}g · {food.category}{food.serveNote ? ` · ${food.serveNote}` : ''}</p>
                 </div>
                 <button onClick={() => { deleteCustomFood(food.id); showToast('Food deleted', 'info') }}
                   style={{ background: 'transparent', border: '1px solid #2a2a3e', borderRadius: 6, padding: '6px 10px', color: 'var(--text-muted)', fontSize: 13, cursor: 'pointer' }}>
@@ -487,6 +545,10 @@ export default function Nutrition() {
                       {['Protein', 'Carbs', 'Fruit', 'Vegetables', 'Dairy', 'Fats', 'Legumes', 'Snacks', 'Beverages', 'Other'].map(c => <option key={c}>{c}</option>)}
                     </select>
                   </div>
+                </div>
+                <div>
+                  <p style={{ fontSize: 11, color: 'var(--text-muted)', marginBottom: 4 }}>Serve note (optional)</p>
+                  <input placeholder="e.g. 2 pieces, 1 scoop, 1 slice" value={customFoodForm.serveNote} onChange={e => setCustomFoodForm(f => ({ ...f, serveNote: e.target.value }))} style={inputStyle} />
                 </div>
                 <div style={{ display: 'flex', gap: 10, marginTop: 4 }}>
                   <button type="submit" style={{ background: 'var(--accent)', color: '#fff', border: 'none', borderRadius: 8, padding: '10px 22px', fontWeight: 600, cursor: 'pointer', fontSize: 14 }}>Save Food</button>
