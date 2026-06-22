@@ -1,4 +1,4 @@
-import { useState } from 'react'
+import React, { useState, useRef } from 'react'
 import { Link } from 'react-router-dom'
 import { useApp, todayISO, calcStreak } from '../context/AppContext'
 import { useToast } from '../context/ToastContext'
@@ -36,6 +36,17 @@ function ProgressRing({ value, goal, label, sublabel, color, size = 110 }: {
       </div>
       <span style={{ fontSize: 11, color: 'var(--text-muted)', textAlign: 'center' }}>{label}</span>
     </div>
+  )
+}
+
+// ── Drag handle ────────────────────────────────────────────────────────────────
+function DragHandle() {
+  return (
+    <span style={{
+      display: 'inline-block', cursor: 'grab', color: 'var(--text-subtle)',
+      fontSize: 16, lineHeight: 1, userSelect: 'none', marginRight: 8,
+      letterSpacing: 1,
+    }} title="Drag to reorder">⠿</span>
   )
 }
 
@@ -101,6 +112,47 @@ export default function Dashboard() {
       return DEFAULT_WIDGETS
     }
   })
+
+  // ── Drag-and-drop order ──────────────────────────────────────────────────────
+  const dragSrc = useRef<string | null>(null)
+  const [dragOver, setDragOver] = useState<string | null>(null)
+  const [draggingKey, setDraggingKey] = useState<string | null>(null)
+
+  const DEFAULT_ORDER = ['rings', 'calories', 'weight', 'quickActions', 'weeklyActivity', 'weeklySummary']
+  const [widgetOrder, setWidgetOrder] = useState<string[]>(() => {
+    try {
+      const saved: string[] = JSON.parse(localStorage.getItem('vf_dashboard_order') || '[]')
+      const valid = saved.filter(k => DEFAULT_ORDER.includes(k))
+      const missing = DEFAULT_ORDER.filter(k => !valid.includes(k))
+      return [...valid, ...missing]
+    } catch { return [...DEFAULT_ORDER] }
+  })
+
+  function handleDragStart(key: string) {
+    dragSrc.current = key
+    setDraggingKey(key)
+  }
+  function handleDragOver(e: React.DragEvent, key: string) {
+    e.preventDefault()
+    setDragOver(key)
+  }
+  function handleDrop(e: React.DragEvent, key: string) {
+    e.preventDefault()
+    const src = dragSrc.current
+    if (!src || src === key) { setDragOver(null); return }
+    setWidgetOrder(prev => {
+      const next = prev.filter(k => k !== src)
+      const idx = next.indexOf(key)
+      next.splice(Math.max(0, idx), 0, src)
+      localStorage.setItem('vf_dashboard_order', JSON.stringify(next))
+      return next
+    })
+    dragSrc.current = null
+    setDragOver(null)
+    setDraggingKey(null)
+  }
+  function handleDragEnd() { dragSrc.current = null; setDragOver(null); setDraggingKey(null) }
+
   const today = todayISO()
 
   function toggleWidget(k: WidgetKey) {
@@ -192,74 +244,33 @@ export default function Dashboard() {
     ? [0]
     : [0, Math.floor((weightEntries.length - 1) / 2), weightEntries.length - 1]
 
-  return (
-    <div style={{ maxWidth: 1200, margin: '0 auto', padding: isMobile ? '24px 16px' : '40px 24px' }}>
+  // ── Drag wrapper helper ────────────────────────────────────────────────────
+  function dragProps(key: string, mb: number = 20) {
+    return {
+      draggable: true as const,
+      onDragStart: () => handleDragStart(key),
+      onDragOver: (e: React.DragEvent) => handleDragOver(e, key),
+      onDrop: (e: React.DragEvent) => handleDrop(e, key),
+      onDragEnd: handleDragEnd,
+      style: {
+        opacity: draggingKey === key ? 0.5 : 1,
+        outline: dragOver === key ? '2px dashed var(--accent)' : 'none',
+        borderRadius: 16,
+        transition: 'opacity 0.15s',
+        marginBottom: mb,
+      },
+    }
+  }
 
-      {/* Onboarding banner */}
-      {isNewUser && (
-        <div style={{ background: 'linear-gradient(135deg, rgba(249,115,22,0.15), rgba(249,115,22,0.05))', border: '1px solid rgba(249,115,22,0.3)', borderRadius: 16, padding: isMobile ? '20px 20px' : '24px 32px', marginBottom: 28 }}>
-          <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: isMobile ? 'flex-start' : 'center', gap: 16, flexDirection: isMobile ? 'column' : 'row' }}>
-            <div>
-              <p style={{ fontSize: 22, marginBottom: 6 }}>👋</p>
-              <h2 style={{ fontWeight: 700, fontSize: isMobile ? 17 : 20, marginBottom: 6, color: 'var(--accent)' }}>Welcome to Velocity Fitness!</h2>
-              <p style={{ color: '#94a3b8', fontSize: 14, lineHeight: 1.6 }}>
-                Start by setting your name and daily goals, then log your first workout or meal.
-              </p>
-            </div>
-            <div style={{ display: 'flex', gap: 10, flexShrink: 0 }}>
-              <Link to="/settings" style={{ background: 'var(--accent)', color: '#fff', padding: '10px 20px', borderRadius: 8, fontWeight: 600, fontSize: 14, textDecoration: 'none', whiteSpace: 'nowrap' }}>
-                Set up profile →
-              </Link>
-            </div>
+  // ── Widget map ─────────────────────────────────────────────────────────────
+  const widgetMap: Record<string, React.ReactElement> = {
+    rings: (
+      <div key="rings" {...dragProps('rings')}>
+        <Card>
+          <div style={{ display: 'flex', alignItems: 'center', marginBottom: 12 }}>
+            <DragHandle />
+            <span style={{ fontWeight: 600, fontSize: 15 }}>Activity Stats</span>
           </div>
-        </div>
-      )}
-
-      {/* Header row with Customise button */}
-      <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', marginBottom: 24 }}>
-        <div>
-          <p style={{ color: 'var(--text-muted)', fontSize: 13, marginBottom: 4 }}>{todayStr}</p>
-          <h1 style={{ fontSize: isMobile ? 22 : 28, fontWeight: 700, letterSpacing: '-0.5px' }}>
-            Good morning, {profile.name}! 👋
-          </h1>
-          {streak > 0 && (
-            <p style={{ marginTop: 6, fontSize: 14, color: 'var(--accent)' }}>🔥 {streak}-day streak — keep it going!</p>
-          )}
-        </div>
-        <button
-          onClick={() => setCustomiseOpen(o => !o)}
-          style={{
-            background: customiseOpen ? 'var(--accent-dim)' : 'var(--card)',
-            border: '1px solid var(--border)',
-            borderRadius: 8,
-            padding: '8px 14px',
-            color: customiseOpen ? 'var(--accent)' : 'var(--text-muted)',
-            fontSize: 13,
-            fontWeight: 600,
-            cursor: 'pointer',
-            flexShrink: 0,
-            marginTop: 4,
-          }}
-        >
-          ⚙️ Customise
-        </button>
-      </div>
-
-      {/* Customise panel */}
-      {customiseOpen && (
-        <Card style={{ marginBottom: 20 }}>
-          <h2 style={{ fontWeight: 600, fontSize: 14, marginBottom: 14, color: 'var(--text-muted)' }}>Dashboard Widgets</h2>
-          <div style={{ display: 'grid', gridTemplateColumns: isMobile ? '1fr' : '1fr 1fr', gap: '8px 32px' }}>
-            {(Object.keys(DEFAULT_WIDGETS) as WidgetKey[]).map(k => (
-              <TogglePill key={k} on={widgets[k]} onToggle={() => toggleWidget(k)} label={WIDGET_LABELS[k]} />
-            ))}
-          </div>
-        </Card>
-      )}
-
-      {/* Activity Stats — simple stat cards */}
-      {widgets.rings && (
-        <Card style={{ marginBottom: 20 }}>
           <div style={{
             display: 'grid',
             gridTemplateColumns: isMobile ? '1fr 1fr' : 'repeat(4, 1fr)',
@@ -280,54 +291,60 @@ export default function Dashboard() {
             ))}
           </div>
         </Card>
-      )}
+      </div>
+    ),
 
-      {/* Calorie & Macro rings */}
-      {widgets.calories && (
-        <Card style={{ marginBottom: 20 }}>
-          <h2 style={{ fontWeight: 600, fontSize: 15, marginBottom: 16 }}>🍽️ Today's Calorie & Macros</h2>
-          <div style={{
-            display: 'flex',
-            flexDirection: 'column',
-            alignItems: 'center',
-            gap: 20,
-          }}>
-            {/* Large calorie ring — top, centred */}
-            <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', gap: 6 }}>
-              {(() => {
-                const size = isMobile ? 110 : 140
-                const r = (size - 16) / 2
-                const circ = 2 * Math.PI * r
-                const pct = Math.min(1, calConsumed / Math.max(1, profile.dailyCalorieGoal))
-                const offset = circ * (1 - pct)
-                return (
-                  <div style={{ position: 'relative', width: size, height: size }}>
-                    <svg width={size} height={size} style={{ transform: 'rotate(-90deg)' }}>
-                      <circle cx={size / 2} cy={size / 2} r={r} fill="none" stroke="var(--border)" strokeWidth={10} />
-                      <circle cx={size / 2} cy={size / 2} r={r} fill="none" stroke="#a855f7" strokeWidth={10}
-                        strokeDasharray={circ} strokeDashoffset={offset}
-                        strokeLinecap="round" style={{ transition: 'stroke-dashoffset 0.6s ease' }} />
-                    </svg>
-                    <div style={{ position: 'absolute', inset: 0, display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center' }}>
-                      <span style={{ fontSize: isMobile ? 18 : 22, fontWeight: 700, color: 'var(--text)', lineHeight: 1.1 }}>{calConsumed.toLocaleString()}</span>
-                      <span style={{ fontSize: isMobile ? 11 : 12, color: 'var(--text-muted)' }}>kcal</span>
-                    </div>
-                  </div>
-                )
-              })()}
-              <span style={{ fontSize: 12, color: 'var(--text-muted)' }}>Calories</span>
-            </div>
-
-            {/* 3 macro rings — below, in a row, slightly smaller */}
+    calories: (
+      <div key="calories" {...dragProps('calories')}>
+        <Card>
+          <div style={{ display: 'flex', alignItems: 'center', marginBottom: 16 }}>
+            <DragHandle />
+            <h2 style={{ fontWeight: 600, fontSize: 15 }}>🍽️ Today's Calorie & Macros</h2>
+          </div>
+          <div style={{ maxWidth: 320, margin: '0 auto', width: '100%' }}>
             <div style={{
               display: 'flex',
-              flexDirection: 'row',
-              gap: isMobile ? 20 : 32,
-              justifyContent: 'center',
+              flexDirection: 'column',
+              alignItems: 'center',
+              gap: 20,
             }}>
-              <ProgressRing value={macrosConsumed.protein} goal={profile.proteinGoal} label="Protein" sublabel="g" color="#ef4444" size={isMobile ? 76 : 90} />
-              <ProgressRing value={macrosConsumed.carbs} goal={profile.carbsGoal} label="Carbs" sublabel="g" color="#f59e0b" size={isMobile ? 76 : 90} />
-              <ProgressRing value={macrosConsumed.fat} goal={profile.fatGoal} label="Fat" sublabel="g" color="#22c55e" size={isMobile ? 76 : 90} />
+              {/* Large calorie ring — top, centred */}
+              <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', gap: 6 }}>
+                {(() => {
+                  const size = isMobile ? 110 : 140
+                  const r = (size - 16) / 2
+                  const circ = 2 * Math.PI * r
+                  const pct = Math.min(1, calConsumed / Math.max(1, profile.dailyCalorieGoal))
+                  const offset = circ * (1 - pct)
+                  return (
+                    <div style={{ position: 'relative', width: size, height: size }}>
+                      <svg width={size} height={size} style={{ transform: 'rotate(-90deg)' }}>
+                        <circle cx={size / 2} cy={size / 2} r={r} fill="none" stroke="var(--border)" strokeWidth={10} />
+                        <circle cx={size / 2} cy={size / 2} r={r} fill="none" stroke="#a855f7" strokeWidth={10}
+                          strokeDasharray={circ} strokeDashoffset={offset}
+                          strokeLinecap="round" style={{ transition: 'stroke-dashoffset 0.6s ease' }} />
+                      </svg>
+                      <div style={{ position: 'absolute', inset: 0, display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center' }}>
+                        <span style={{ fontSize: isMobile ? 18 : 22, fontWeight: 700, color: 'var(--text)', lineHeight: 1.1 }}>{calConsumed.toLocaleString()}</span>
+                        <span style={{ fontSize: isMobile ? 11 : 12, color: 'var(--text-muted)' }}>kcal</span>
+                      </div>
+                    </div>
+                  )
+                })()}
+                <span style={{ fontSize: 12, color: 'var(--text-muted)' }}>Calories</span>
+              </div>
+
+              {/* 3 macro rings — below, in a row, slightly smaller */}
+              <div style={{
+                display: 'flex',
+                flexDirection: 'row',
+                gap: isMobile ? 20 : 32,
+                justifyContent: 'center',
+              }}>
+                <ProgressRing value={macrosConsumed.protein} goal={profile.proteinGoal} label="Protein" sublabel="g" color="#ef4444" size={isMobile ? 76 : 90} />
+                <ProgressRing value={macrosConsumed.carbs} goal={profile.carbsGoal} label="Carbs" sublabel="g" color="#f59e0b" size={isMobile ? 76 : 90} />
+                <ProgressRing value={macrosConsumed.fat} goal={profile.fatGoal} label="Fat" sublabel="g" color="#22c55e" size={isMobile ? 76 : 90} />
+              </div>
             </div>
           </div>
 
@@ -336,12 +353,16 @@ export default function Dashboard() {
             {calRemaining >= 0 ? calRemaining.toLocaleString() : Math.abs(calRemaining).toLocaleString()} kcal {calRemaining >= 0 ? 'remaining' : 'over goal'} today
           </p>
         </Card>
-      )}
+      </div>
+    ),
 
-      {/* Weight Tracker */}
-      {widgets.weight && (
-        <Card style={{ marginBottom: 20 }}>
-          <h2 style={{ fontWeight: 600, fontSize: 15, marginBottom: 12 }}>⚖️ Weight Progress</h2>
+    weight: (
+      <div key="weight" {...dragProps('weight')}>
+        <Card>
+          <div style={{ display: 'flex', alignItems: 'center', marginBottom: 12 }}>
+            <DragHandle />
+            <h2 style={{ fontWeight: 600, fontSize: 15 }}>⚖️ Weight Progress</h2>
+          </div>
           {!hasWeightData ? (
             <p style={{ color: 'var(--text-muted)', fontSize: 13, textAlign: 'center', padding: '24px 0' }}>
               No weigh-ins logged yet. Add one in Settings → Body Stats.
@@ -417,13 +438,16 @@ export default function Dashboard() {
             </>
           )}
         </Card>
-      )}
+      </div>
+    ),
 
-      {/* Quick actions */}
-      {widgets.quickActions && (
-        <div style={{ display: 'grid', gridTemplateColumns: isMobile ? '1fr' : '1fr 1fr', gap: 16, marginBottom: 24 }}>
+    quickActions: (
+      <div key="quickActions" {...dragProps('quickActions', 24)}>
+        <div style={{ display: 'grid', gridTemplateColumns: isMobile ? '1fr' : '1fr 1fr', gap: 16 }}>
           <Card>
-            <h2 style={{ fontWeight: 600, fontSize: 15, marginBottom: 12 }}>💧 Log Water</h2>
+            <h2 style={{ fontWeight: 600, fontSize: 15, marginBottom: 12 }}>
+              <DragHandle />💧 Log Water
+            </h2>
             <div style={{ display: 'flex', gap: 8, flexWrap: 'wrap', marginBottom: 10 }}>
               {[0.25, 0.5, 0.75, 1].map(amt => (
                 <button key={amt} onClick={() => handleWater(amt)} style={{ background: 'var(--accent-dim)', border: '1px solid var(--accent-dim)', borderRadius: 8, padding: '8px 14px', color: 'var(--accent)', fontSize: 13, fontWeight: 600, cursor: 'pointer' }}>
@@ -460,49 +484,127 @@ export default function Dashboard() {
             )}
           </Card>
         </div>
-      )}
+      </div>
+    ),
 
-      <div style={{ display: 'grid', gridTemplateColumns: isMobile ? '1fr' : '2fr 1fr', gap: 20 }}>
-        {widgets.weeklyActivity && (
-          <Card>
-            <h2 style={{ fontWeight: 600, fontSize: 15, marginBottom: 14 }}>This Week's Activity</h2>
-            <div style={{ display: 'flex', flexDirection: 'column', gap: 8 }}>
-              {last7.map(({ day, type, duration, calories, hasActivity }) => (
-                <div key={day} style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', padding: '10px 14px', background: 'var(--bg)', borderRadius: 10 }}>
-                  <div style={{ display: 'flex', gap: 12, alignItems: 'center' }}>
-                    <span style={{ color: 'var(--text-subtle)', fontSize: 13, minWidth: 32 }}>{day}</span>
-                    <span style={{ fontWeight: 500, fontSize: 13, color: hasActivity ? 'var(--text)' : 'var(--text-subtle)' }}>{type}</span>
-                  </div>
-                  <div style={{ display: 'flex', gap: 12 }}>
-                    {duration > 0 && <span style={{ color: 'var(--text-muted)', fontSize: 13 }}>{duration}m</span>}
-                    {calories > 0 && <span style={{ color: 'var(--accent)', fontSize: 13, fontWeight: 500 }}>{calories} kcal</span>}
-                  </div>
+    weeklyActivity: (
+      <div key="weeklyActivity" {...dragProps('weeklyActivity')}>
+        <Card>
+          <div style={{ display: 'flex', alignItems: 'center', marginBottom: 14 }}>
+            <DragHandle />
+            <h2 style={{ fontWeight: 600, fontSize: 15 }}>This Week's Activity</h2>
+          </div>
+          <div style={{ display: 'flex', flexDirection: 'column', gap: 8 }}>
+            {last7.map(({ day, type, duration, calories, hasActivity }) => (
+              <div key={day} style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', padding: '10px 14px', background: 'var(--bg)', borderRadius: 10 }}>
+                <div style={{ display: 'flex', gap: 12, alignItems: 'center' }}>
+                  <span style={{ color: 'var(--text-subtle)', fontSize: 13, minWidth: 32 }}>{day}</span>
+                  <span style={{ fontWeight: 500, fontSize: 13, color: hasActivity ? 'var(--text)' : 'var(--text-subtle)' }}>{type}</span>
                 </div>
-              ))}
-            </div>
-          </Card>
-        )}
-
-        {widgets.weeklySummary && (
-          <Card>
-            <h2 style={{ fontWeight: 600, fontSize: 15, marginBottom: 14 }}>Weekly Summary</h2>
-            {[
-              { label: 'Workouts', value: weekWorkouts.length.toString(), icon: '✅' },
-              { label: 'Calories Burned', value: totalCalsThisWeek.toLocaleString(), icon: '🔥' },
-              { label: 'Active Time', value: h > 0 ? `${h}h ${m}m` : `${m}m`, icon: '⏱️' },
-              { label: 'Streak', value: `${streak} days`, icon: '⚡' },
-            ].map(({ label, value, icon }) => (
-              <div key={label} style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', padding: '11px 0', borderBottom: '1px solid #1e1e2e' }}>
-                <div style={{ display: 'flex', gap: 10, alignItems: 'center' }}>
-                  <span>{icon}</span>
-                  <span style={{ color: '#94a3b8', fontSize: 13 }}>{label}</span>
+                <div style={{ display: 'flex', gap: 12 }}>
+                  {duration > 0 && <span style={{ color: 'var(--text-muted)', fontSize: 13 }}>{duration}m</span>}
+                  {calories > 0 && <span style={{ color: 'var(--accent)', fontSize: 13, fontWeight: 500 }}>{calories} kcal</span>}
                 </div>
-                <span style={{ fontWeight: 600, color: 'var(--accent)', fontSize: 14 }}>{value}</span>
               </div>
             ))}
-          </Card>
-        )}
+          </div>
+        </Card>
       </div>
+    ),
+
+    weeklySummary: (
+      <div key="weeklySummary" {...dragProps('weeklySummary')}>
+        <Card>
+          <div style={{ display: 'flex', alignItems: 'center', marginBottom: 14 }}>
+            <DragHandle />
+            <h2 style={{ fontWeight: 600, fontSize: 15 }}>Weekly Summary</h2>
+          </div>
+          {[
+            { label: 'Workouts', value: weekWorkouts.length.toString(), icon: '✅' },
+            { label: 'Calories Burned', value: totalCalsThisWeek.toLocaleString(), icon: '🔥' },
+            { label: 'Active Time', value: h > 0 ? `${h}h ${m}m` : `${m}m`, icon: '⏱️' },
+            { label: 'Streak', value: `${streak} days`, icon: '⚡' },
+          ].map(({ label, value, icon }) => (
+            <div key={label} style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', padding: '11px 0', borderBottom: '1px solid #1e1e2e' }}>
+              <div style={{ display: 'flex', gap: 10, alignItems: 'center' }}>
+                <span>{icon}</span>
+                <span style={{ color: '#94a3b8', fontSize: 13 }}>{label}</span>
+              </div>
+              <span style={{ fontWeight: 600, color: 'var(--accent)', fontSize: 14 }}>{value}</span>
+            </div>
+          ))}
+        </Card>
+      </div>
+    ),
+  }
+
+  return (
+    <div style={{ maxWidth: 1200, margin: '0 auto', padding: isMobile ? '24px 16px' : '40px 24px' }}>
+
+      {/* Onboarding banner */}
+      {isNewUser && (
+        <div style={{ background: 'linear-gradient(135deg, rgba(249,115,22,0.15), rgba(249,115,22,0.05))', border: '1px solid rgba(249,115,22,0.3)', borderRadius: 16, padding: isMobile ? '20px 20px' : '24px 32px', marginBottom: 28 }}>
+          <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: isMobile ? 'flex-start' : 'center', gap: 16, flexDirection: isMobile ? 'column' : 'row' }}>
+            <div>
+              <p style={{ fontSize: 22, marginBottom: 6 }}>👋</p>
+              <h2 style={{ fontWeight: 700, fontSize: isMobile ? 17 : 20, marginBottom: 6, color: 'var(--accent)' }}>Welcome to Velocity Fitness!</h2>
+              <p style={{ color: '#94a3b8', fontSize: 14, lineHeight: 1.6 }}>
+                Start by setting your name and daily goals, then log your first workout or meal.
+              </p>
+            </div>
+            <div style={{ display: 'flex', gap: 10, flexShrink: 0 }}>
+              <Link to="/settings" style={{ background: 'var(--accent)', color: '#fff', padding: '10px 20px', borderRadius: 8, fontWeight: 600, fontSize: 14, textDecoration: 'none', whiteSpace: 'nowrap' }}>
+                Set up profile →
+              </Link>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* Header row with Customise button */}
+      <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', marginBottom: 24 }}>
+        <div>
+          <p style={{ color: 'var(--text-muted)', fontSize: 13, marginBottom: 4 }}>{todayStr}</p>
+          <h1 style={{ fontSize: isMobile ? 22 : 28, fontWeight: 700, letterSpacing: '-0.5px' }}>
+            Good morning, {profile.name}! 👋
+          </h1>
+          {streak > 0 && (
+            <p style={{ marginTop: 6, fontSize: 14, color: 'var(--accent)' }}>🔥 {streak}-day streak — keep it going!</p>
+          )}
+        </div>
+        <button
+          onClick={() => setCustomiseOpen(o => !o)}
+          style={{
+            background: customiseOpen ? 'var(--accent-dim)' : 'var(--card)',
+            border: '1px solid var(--border)',
+            borderRadius: 8,
+            padding: '8px 14px',
+            color: customiseOpen ? 'var(--accent)' : 'var(--text-muted)',
+            fontSize: 13,
+            fontWeight: 600,
+            cursor: 'pointer',
+            flexShrink: 0,
+            marginTop: 4,
+          }}
+        >
+          ⚙️ Customise
+        </button>
+      </div>
+
+      {/* Customise panel */}
+      {customiseOpen && (
+        <Card style={{ marginBottom: 20 }}>
+          <h2 style={{ fontWeight: 600, fontSize: 14, marginBottom: 14, color: 'var(--text-muted)' }}>Dashboard Widgets</h2>
+          <div style={{ display: 'grid', gridTemplateColumns: isMobile ? '1fr' : '1fr 1fr', gap: '8px 32px' }}>
+            {(Object.keys(DEFAULT_WIDGETS) as WidgetKey[]).map(k => (
+              <TogglePill key={k} on={widgets[k]} onToggle={() => toggleWidget(k)} label={WIDGET_LABELS[k]} />
+            ))}
+          </div>
+        </Card>
+      )}
+
+      {/* Ordered widget render */}
+      {widgetOrder.filter(key => widgets[key as WidgetKey]).map(key => widgetMap[key])}
     </div>
   )
 }
