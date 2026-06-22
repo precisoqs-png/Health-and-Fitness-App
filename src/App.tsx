@@ -11,6 +11,8 @@ import Nutrition from './pages/Nutrition'
 import Progress from './pages/Progress'
 import Settings from './pages/Settings'
 import Programs from './pages/Programs'
+import VisionBoard from './pages/VisionBoard'
+import GoalDetail from './pages/GoalDetail'
 
 export default function App() {
   const { user, loading } = useAuth()
@@ -38,6 +40,8 @@ export default function App() {
           <Route path="/progress" element={<Progress />} />
           <Route path="/settings" element={<Settings />} />
           <Route path="/programs" element={<Programs />} />
+          <Route path="/vision-board" element={<VisionBoard />} />
+          <Route path="/vision-board/:goalId" element={<GoalDetail />} />
         </Routes>
       </div>
       {isMobile && <BottomNav />}

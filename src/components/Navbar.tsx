@@ -8,6 +8,7 @@ const navItems = [
   { to: '/programs', label: 'Training', icon: '🏋️' },
   { to: '/nutrition', label: 'Nutrition', icon: '🥗' },
   { to: '/progress', label: 'Progress', icon: '📈' },
+  { to: '/vision-board', label: 'Vision', icon: '✨' },
   { to: '/settings', label: 'Settings', icon: '⚙️' },
 ]
 
